@@ -5,5 +5,5 @@ setup(
     version='0.0.1',
     description='Falcon extension for building nice-viewing API',
 
-    py_modules=['wing']
+    packages=['wing']
 )
