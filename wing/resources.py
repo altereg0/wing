@@ -18,8 +18,6 @@ def get_fields_from_cls(cls, excludes=None):
 
 class ResourceOptions(object):
     allowed_methods = ['get', 'post', 'put', 'delete', 'patch']
-    list_allowed_methods = None
-    detail_allowed_methods = None
     limit = 20
     max_limit = 1000
     resource_name = None
@@ -141,6 +139,27 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
 
             field.hydrate(obj, value)
 
+    def paginate(self, req, query):
+        """
+        Paginate object using request
+        :param req: request
+        :param data: iterable data object
+        """
+
+        page = req.get_param_as_int('page', min=1) or 1
+
+        limit = req.get_param_as_int('limit', min=1, max=self._meta.max_limit) or self._meta.limit
+        offset = (page-1) * limit
+
+        return {
+            'meta': {
+                'limit': limit,
+                'offset': (page-1) * limit,
+                'total_count': query.count(),
+            },
+
+            'objects': [self.dehydrate(item, req, sender='list') for item in query[offset:offset + limit]]
+        }
 
 def _filter_get_expr(field, filter_type, value):
     if filter_type == 'exact':

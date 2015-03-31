@@ -1,7 +1,6 @@
 import falcon
 from . import serialization
 from peewee import DoesNotExist
-from .pagination import Paginator
 
 
 class BaseFalconResource:
@@ -22,22 +21,8 @@ class CollectionFalconResource(BaseFalconResource):
         """
         filters = self._get_filters(req)
 
-        query_set = self.resource.get_object_list(filters)
-
-        p = Paginator(query_set, 20)
-        p.page_number = req.get_param_as_int('page', min=1) or 1
-
-        result = {
-            'meta': {
-                'limit': 20,
-                'offset': p.offset,
-                'total_count': p.total_count,
-            },
-
-            'objects': [self.resource.dehydrate(item, req, sender='list') for item in p.items]
-        }
-
-        resp.body = serialization.dumps(result)
+        qs = self.resource.get_object_list(filters)
+        resp.body = serialization.dumps(self.resource.paginate(req, qs))
 
     def on_post(self, req, resp):
         """
