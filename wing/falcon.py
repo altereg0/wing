@@ -90,7 +90,7 @@ class CollectionFalconResource(BaseFalconResource):
 
         resp.status = falcon.HTTP_201
         resp.body = serialization.dumps({
-            'id': obj.id
+            self.resource._meta.primary_key: obj.id
         })
 
 
