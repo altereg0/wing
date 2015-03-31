@@ -20,7 +20,9 @@ class CollectionFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
-        query_set = self.resource.get_object_list()
+        filters = self._get_filters(req)
+
+        query_set = self.resource.get_object_list(filters)
 
         p = Paginator(query_set, 20)
         p.page_number = req.get_param_as_int('page', min=1) or 1
@@ -53,6 +55,19 @@ class CollectionFalconResource(BaseFalconResource):
         resp.body = serialization.dumps({
             self.resource._meta.primary_key: obj.id
         })
+
+    def _get_filters(self, req):
+        filters = []
+        for key, v in req.params.items():
+            try:
+                field, op = key.rsplit('__', 1)
+            except Exception:
+                field, op = key, 'exact'
+
+            if field in self.resource._meta.filtering and op in self.resource._meta.filtering[field]:
+                filters.append((field, op, v))
+
+        return filters
 
 
 class ItemFalconResource(BaseFalconResource):

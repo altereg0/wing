@@ -78,13 +78,16 @@ class ModelDeclarativeMetaclass(type):
 
 
 class ModelResource(metaclass=ModelDeclarativeMetaclass):
-    def get_object_list(self, **kwargs):
-        return self.apply_filters(self._meta.queryset, kwargs)
+    def get_object_list(self, filters=None):
+        if not filters:
+            filters = []
+
+        return self.apply_filters(self._meta.queryset, filters)
 
     def get_object(self, **kwargs):
         cls = self._meta.object_class
 
-        objects = self.apply_filters(self._meta.queryset, kwargs)
+        objects = self.apply_filters(self._meta.queryset, _make_filters_from_kwargs(kwargs))
         objects = objects[:1]
 
         if len(objects) == 0:
@@ -96,17 +99,17 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
         return self._meta.object_class()
 
     def delete_object(self, **kwargs):
-        objects = self.apply_filters(self._meta.queryset, kwargs)
+        objects = self.apply_filters(self._meta.queryset, _make_filters_from_kwargs(kwargs))
         return objects.delete().execute()
 
     def apply_filters(self, query, filters):
         cls = self._meta.object_class
 
         conditions = []
-        for k, v in filters.items():
+        for k, t, v in filters:
             if hasattr(cls, k):
                 v = self.fields[k].convert(v)
-                conditions.append((getattr(cls, k) == v))
+                conditions.append(_filter_get_expr(getattr(cls, k), t, v))
 
         if conditions:
             return query.where(*conditions)
@@ -137,6 +140,36 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
             value = data.get(key, None)
 
             field.hydrate(obj, value)
+
+
+def _filter_get_expr(field, filter_type, value):
+    if filter_type == 'exact':
+        return field == value
+    elif filter_type == 'gt':
+        return field > value
+    elif filter_type == 'gte':
+        return field >= value
+    elif filter_type == 'lt':
+        return field < value
+    elif filter_type == 'lte':
+        return field <= value
+    elif filter_type == 'contains':
+        return field.contains(value)
+    elif filter_type == 'startswith':
+        return field.startswith(value)
+    elif filter_type == 'endswith':
+        return field.endswith(value)
+    elif filter_type == 'is_null':
+        return field.is_null(value)
+    elif filter_type == 'in':
+        value = value.split(',')
+        return field.in_(value)
+    else:
+        raise NotImplemented
+
+
+def _make_filters_from_kwargs(args):
+    return [(k, 'exact', v) for k, v in args.items()]
 
 
 def custom_method(uri, http_methods=None):
