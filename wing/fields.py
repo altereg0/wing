@@ -126,16 +126,23 @@ class ForeignKeyField(Field):
 
 
 class ToManyField(Field):
-    def __init__(self, attribute, rel_resource, *args, **kwargs):
+    def __init__(self, attribute, rel_resource, full=False, *args, **kwargs):
         super(ToManyField, self).__init__(attribute, *args, **kwargs)
 
         self.rel_resource = rel_resource
         self.rel_pk = rel_resource._meta.primary_key
+        self.full = full
 
     def dehydrate(self, obj):
         qs = getattr(obj, self.attribute)[:1000]
 
-        return [getattr(rel_obj, self.rel_pk) for rel_obj in qs]
+        return [self.dehydrate_rel_obj(rel_obj) for rel_obj in qs]
+
+    def dehydrate_rel_obj(self, rel_obj):
+        if self.full:
+            return self.rel_resource.dehydrate(rel_obj, None)
+        else:
+            return getattr(rel_obj, self.rel_pk)
 
     def hydrate(self, obj, value):
         raise NotImplemented
