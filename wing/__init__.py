@@ -16,7 +16,7 @@ def register_resource(app, api_name, resource):
     prefix = "/%s/%s" % (api_name, resource._meta.resource_name)
 
     app.add_route(prefix + '/', coll_res)
-    app.add_route(prefix + '/{id}', item_res)
+    app.add_route(prefix + '/{%s}' % resource._meta.primary_key, item_res)
 
     for func_name, uri, http_methods in resource.custom_methods:
         func = getattr(resource, func_name)
