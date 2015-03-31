@@ -19,6 +19,9 @@ class CollectionFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
+        if 'get' not in self.resource._meta.allowed_methods:
+            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+
         filters = self._get_filters(req)
 
         qs = self.resource.get_object_list(filters)
@@ -30,6 +33,9 @@ class CollectionFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
+        if 'post' not in self.resource._meta.allowed_methods:
+            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+
         data = serialization.loads(req.stream.read().decode('utf-8'))
 
         obj = self.resource.create_object()
@@ -67,6 +73,10 @@ class ItemFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
+
+        if 'get' not in self.resource._meta.allowed_methods:
+            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+
         try:
             obj = self.resource.get_object(**kwargs)
         except DoesNotExist:
@@ -82,6 +92,9 @@ class ItemFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
+        if 'put' not in self.resource._meta.allowed_methods:
+            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+
         try:
             obj = self.resource.get_object(**kwargs)
         except DoesNotExist:
@@ -101,6 +114,9 @@ class ItemFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
+        if 'delete' not in self.resource._meta.allowed_methods:
+            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+
         affected_rows = self.resource.delete_object(**kwargs)
 
         resp.status = falcon.HTTP_204 if affected_rows > 0 else falcon.HTTP_404
