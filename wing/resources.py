@@ -102,9 +102,14 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
     def apply_filters(self, query, filters):
         cls = self._meta.object_class
 
-        conditions = [getattr(cls, k) == v for k, v in filters.items() if hasattr(cls, k)]
+        conditions = []
+        for k, v in filters.items():
+            if hasattr(cls, k):
+                v = self.fields[k].convert(v)
+                conditions.append((getattr(cls, k) == v))
+
         if conditions:
-            return query.where(*filters)
+            return query.where(*conditions)
 
         return query
 

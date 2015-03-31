@@ -165,8 +165,8 @@ class FunctionResource():
 
 
 def resource_func(func):
-    def wrapper(req, resp):
-        result = func(req, resp)
+    def wrapper(req, resp, *args, **kwargs):
+        result = func(req, resp, *args, **kwargs)
 
         if result is not None:
             resp.body = serialization.dumps(result)
