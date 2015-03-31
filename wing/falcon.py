@@ -158,3 +158,28 @@ class ItemFalconResource(BaseFalconResource):
         affected_rows = self.delete_object(id, req)
 
         resp.status = falcon.HTTP_204 if affected_rows > 0 else falcon.HTTP_404
+
+
+class FunctionResource():
+    pass
+
+
+def resource_func(func):
+    def wrapper(req, resp):
+        result = func(req, resp)
+
+        if result is not None:
+            resp.body = serialization.dumps(result)
+
+    return wrapper
+
+
+def create_func_resource(func, http_methods):
+    resource = FunctionResource()
+
+    for http_method in http_methods:
+        method = 'on_' + http_method
+
+        setattr(resource, method, resource_func(func))
+
+    return resource

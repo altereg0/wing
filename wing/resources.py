@@ -66,6 +66,14 @@ class ModelDeclarativeMetaclass(type):
 
             new_class.fields = fields
 
+        new_class.custom_methods = []
+        for func_name, func in attrs.items():
+            func_uri = getattr(func, 'uri', None)
+            func_http_methods = getattr(func, 'http_methods', None)
+
+            if getattr(func, 'type', None) is not None:
+                new_class.custom_methods.append((func_name, func_uri, func_http_methods))
+
         return new_class
 
 
@@ -90,6 +98,15 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
     def delete_object(self, **kwargs):
         objects = self.apply_filters(self._meta.queryset, kwargs)
         return objects.delete().execute()
+
+    def apply_filters(self, query, filters):
+        cls = self._meta.object_class
+
+        conditions = [getattr(cls, k) == v for k, v in filters.items() if hasattr(cls, k)]
+        if conditions:
+            return query.where(*filters)
+
+        return query
 
     def dehydrate(self, obj, req):
         """
@@ -116,11 +133,18 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
 
             field.hydrate(obj, value)
 
-    def apply_filters(self, query, filters):
-        cls = self._meta.object_class
 
-        conditions = [getattr(cls, k) == v for k, v in filters.items() if hasattr(cls, k)]
-        if conditions:
-            return query.where(*filters)
+def custom_method(uri, http_methods=None):
+    if not http_methods:
+        http_methods = ['get']
 
-        return query
+    if isinstance(http_methods, str):
+        http_methods = [http_methods]
+
+    def wrapper(func):
+        func.type = 'custom'
+        func.uri = uri
+        func.http_methods = http_methods
+        return func
+
+    return wrapper
