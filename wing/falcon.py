@@ -1,6 +1,7 @@
 import falcon
 from . import serialization
 from peewee import DoesNotExist
+import peewee
 
 
 class BaseFalconResource:
@@ -46,6 +47,36 @@ class CollectionFalconResource(BaseFalconResource):
         resp.body = serialization.dumps({
             self.resource._meta.primary_key: obj.id
         })
+
+    def on_put(self, req, resp):
+        if 'put' not in self.resource._meta.allowed_methods:
+            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+
+        data = serialization.loads(req.stream.read().decode('utf-8'))
+
+        results = []
+
+        pk_field = self.resource._meta.primary_key
+
+        for item in data:
+            pk = item.get(pk_field)
+
+            if not pk:
+                raise falcon.HTTPBadRequest('No PK', 'Object primary key not found')
+
+            try:
+                obj = self.resource.get_object(**{pk_field: pk})
+            except peewee.DoesNotExist:
+                raise falcon.HTTPNotFound()
+
+            self.resource.hydrate(obj, item, req)
+
+            obj.save()
+
+            results.append({pk_field: obj.id})
+
+        resp.status = falcon.HTTP_200
+        resp.body = serialization.dumps(results)
 
     def _get_filters(self, req):
         filters = []
