@@ -11,7 +11,9 @@ def get_fields_from_cls(cls, excludes=None):
 
     for key, field in cls._meta.fields.items():
         if key not in excludes:
-            fields[key] = create_resource_field(field)
+            field = create_resource_field(field)
+            if field is not None:
+                fields[key] = field
 
     return fields
 
@@ -120,7 +122,7 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
         :param obj: object
         :param fields: visible fields, all by default
         """
-        return {key: field.dehydrate(obj) for key, field in self.fields.items() if sender and (sender in field.show)}
+        return {key: field.dehydrate(obj) for key, field in self.fields.items() if sender is None or (sender in field.show)}
 
     def hydrate(self, obj, data, req):
         """

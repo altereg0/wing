@@ -22,10 +22,7 @@ def create_resource_field(orm_field):
         is_nullable = orm_field.null
 
         if isinstance(orm_field, peewee.ForeignKeyField):
-            rel_cls = orm_field.rel_model
-            rel_pk = rel_cls._meta.primary_key.name
-
-            return ForeignKeyField(orm_field.name, rel_cls, rel_pk, required=is_required, null=is_nullable)
+            return
 
         cls = mapping.get(type(orm_field))
 
@@ -111,22 +108,23 @@ class DateField(DateTimeField):
 
 
 class ForeignKeyField(Field):
-    def __init__(self, attribute, rel_cls, rel_pk='id', rel_pk_coerce=int, *args, **kwargs):
+    def __init__(self, attribute, rel_resource, *args, **kwargs):
         super(ForeignKeyField, self).__init__(attribute, *args, **kwargs)
 
-        self.rel_cls = rel_cls
-        self.rel_pk = rel_pk
-        self.rel_pk_field = getattr(self.rel_cls, self.rel_pk)
-        self.rel_pk_coerce = rel_pk_coerce
+        self.rel_resource = rel_resource
 
     def dehydrate(self, obj):
         """dehydrate field from object"""
         rel_obj = getattr(obj, self.attribute)
-        return getattr(rel_obj, self.rel_pk)
+
+        return getattr(rel_obj, self.rel_resource._meta.primary_key)
 
     def convert(self, value):
-        rel_pk_field = getattr(self.rel_cls, self.rel_pk)
-        return self.rel_cls.get(rel_pk_field == self.rel_pk_coerce(value))
+        rel_pk = self.rel_resource._meta.primary_key
+        rel_field = self.rel_resource.fields[rel_pk]
+
+        params = {rel_pk: rel_field.convert(value)}
+        return self.rel_resource.get_object(**params)
 
 
 class ToManyField(Field):
