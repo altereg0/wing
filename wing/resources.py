@@ -26,7 +26,6 @@ class ResourceOptions(object):
     filtering = {}
     ordering = []
     object_class = None
-    queryset = None
     excludes = []
     primary_key = 'id'
 
@@ -39,14 +38,6 @@ class ResourceOptions(object):
                 # No internals please.
                 if not override_name.startswith('_'):
                     overrides[override_name] = getattr(meta, override_name)
-
-        allowed_methods = overrides.get('allowed_methods', ['get', 'post', 'put', 'delete', 'patch'])
-
-        if overrides.get('list_allowed_methods', None) is None:
-            overrides['list_allowed_methods'] = allowed_methods
-
-        if overrides.get('detail_allowed_methods', None) is None:
-            overrides['detail_allowed_methods'] = allowed_methods
 
         return object.__new__(type('ResourceOptions', (cls,), overrides))
 
@@ -82,12 +73,12 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
         if not filters:
             filters = []
 
-        return self.apply_filters(self._meta.queryset, filters)
+        return self.apply_filters(self._meta.object_class.select(), filters)
 
     def get_object(self, **kwargs):
         cls = self._meta.object_class
 
-        objects = self.apply_filters(self._meta.queryset, _make_filters_from_kwargs(kwargs))
+        objects = self.apply_filters(self._meta.object_class.select(), _make_filters_from_kwargs(kwargs))
         objects = objects[:1]
 
         if len(objects) == 0:
@@ -99,8 +90,8 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
         return self._meta.object_class()
 
     def delete_object(self, **kwargs):
-        objects = self.apply_filters(self._meta.queryset, _make_filters_from_kwargs(kwargs))
-        return objects.delete().execute()
+        q = self.apply_filters(self._meta.object_class.delete(), _make_filters_from_kwargs(kwargs))
+        return q.execute()
 
     def apply_filters(self, query, filters):
         cls = self._meta.object_class
