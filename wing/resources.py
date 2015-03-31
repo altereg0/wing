@@ -116,13 +116,13 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
 
         return query
 
-    def dehydrate(self, obj, req):
+    def dehydrate(self, obj, req, sender=None):
         """
         Dehydrate object
         :param obj: object
         :param fields: visible fields, all by default
         """
-        return {key: field.dehydrate(obj) for key, field in self.fields.items()}
+        return {key: field.dehydrate(obj) for key, field in self.fields.items() if sender and (sender in field.show)}
 
     def hydrate(self, obj, data, req):
         """

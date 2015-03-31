@@ -34,7 +34,7 @@ class CollectionFalconResource(BaseFalconResource):
                 'total_count': p.total_count,
             },
 
-            'objects': [self.resource.dehydrate(item, req) for item in p.items]
+            'objects': [self.resource.dehydrate(item, req, sender='list') for item in p.items]
         }
 
         resp.body = serialization.dumps(result)
@@ -77,7 +77,7 @@ class ItemFalconResource(BaseFalconResource):
 
     def on_get(self, req, resp, **kwargs):
         """
-        Show object
+        Show object details
         :param pk: object id
         :param req: request object
         :param resp: response object
@@ -88,7 +88,7 @@ class ItemFalconResource(BaseFalconResource):
             raise falcon.HTTPNotFound()
 
         resp.status = falcon.HTTP_200
-        resp.body = serialization.dumps(self.resource.dehydrate(obj, req))
+        resp.body = serialization.dumps(self.resource.dehydrate(obj, req, sender='details'))
 
     def on_put(self, req, resp, **kwargs):
         """

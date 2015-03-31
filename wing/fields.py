@@ -42,11 +42,15 @@ class Field(object):
     Implement hydrate and dehydrate methods
     """
 
-    def __init__(self, attribute, required=False, null=False, readonly=False):
+    def __init__(self, attribute, required=False, null=False, readonly=False, show=None):
+        if not show:
+            show = ['details', 'list']
+
         self.attribute = attribute
         self.readonly = readonly
         self.required = required
         self.null = null
+        self.show = show
 
     def hydrate(self, obj, value):
         """hydrate field to object"""
