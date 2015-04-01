@@ -69,11 +69,14 @@ class ModelDeclarativeMetaclass(type):
 
 
 class ModelResource(metaclass=ModelDeclarativeMetaclass):
-    def get_object_list(self, filters=None):
+    def get_object_list(self, filters=None, **kwargs):
         if not filters:
             filters = []
 
-        return self.apply_filters(self._meta.object_class.select(), filters)
+        query = self._meta.object_class.select()
+
+        query = self.apply_filters(query, _make_filters_from_kwargs(kwargs))
+        return self.apply_filters(query, filters)
 
     def get_object(self, **kwargs):
         cls = self._meta.object_class

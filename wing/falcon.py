@@ -14,7 +14,7 @@ class CollectionFalconResource(BaseFalconResource):
     Objects collection base resource
     """
 
-    def on_get(self, req, resp):
+    def on_get(self, req, resp, **kwargs):
         """
         Get objects list
         :param req: request object
@@ -25,7 +25,7 @@ class CollectionFalconResource(BaseFalconResource):
 
         filters = self._get_filters(req)
 
-        qs = self.resource.get_object_list(filters)
+        qs = self.resource.get_object_list(filters, **kwargs)
         resp.body = serialization.dumps(self.resource.paginate(req, qs))
 
     def on_post(self, req, resp):
