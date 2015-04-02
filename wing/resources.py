@@ -28,11 +28,32 @@ class ResourceOptions(object):
         return object.__new__(type('ResourceOptions', (cls,), overrides))
 
 
-class ModelDeclarativeMetaclass(type):
+class DeclarativeMetaclass(type):
     def __new__(cls, name, bases, attrs):
-        new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+        new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+
         opts = getattr(new_class, 'Meta', None)
         new_class._meta = ResourceOptions(opts)
+
+        new_class.fields = {}
+        for field_name, obj in attrs.copy().items():
+            if isinstance(obj, Field):
+                new_class.fields[field_name] = attrs.pop(field_name)
+
+        new_class.custom_methods = []
+        for func_name, func in attrs.items():
+            func_uri = getattr(func, 'uri', None)
+            func_http_methods = getattr(func, 'http_methods', None)
+
+            if getattr(func, 'type', None) is not None:
+                new_class.custom_methods.append((func_name, func_uri, func_http_methods))
+
+        return new_class
+
+
+class ModelDeclarativeMetaclass(DeclarativeMetaclass):
+    def __new__(cls, name, bases, attrs):
+        new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
 
         if new_class._meta.object_class:
             if not new_class._meta.adapter:
@@ -40,29 +61,16 @@ class ModelDeclarativeMetaclass(type):
 
             new_class._db = new_class._meta.adapter(new_class._meta.object_class)
 
-            fields = new_class._db.get_fields(new_class._meta.excludes)
-
-            for field_name, obj in attrs.copy().items():
-                if isinstance(obj, Field):
-                    fields[field_name] = attrs.pop(field_name)
-
-            new_class.fields = fields
-
-            new_class.custom_methods = []
-            for func_name, func in attrs.items():
-                func_uri = getattr(func, 'uri', None)
-                func_http_methods = getattr(func, 'http_methods', None)
-
-                if getattr(func, 'type', None) is not None:
-                    new_class.custom_methods.append((func_name, func_uri, func_http_methods))
+            new_class.fields = new_class._db.get_fields(new_class._meta.excludes + list(new_class.fields.keys()))
 
         return new_class
 
 
 class ModelResource(metaclass=ModelDeclarativeMetaclass):
-    fields = None
     _db = None
     _meta = None
+
+    fields = None
 
     def get_object_list(self, filters=None, **kwargs):
         if not filters:
@@ -89,7 +97,8 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
         Dehydrate object
         :param obj: object
         """
-        return {key: field.dehydrate(obj) for key, field in self.fields.items() if sender is None or (sender in field.show)}
+        return {key: field.dehydrate(obj) for key, field in self.fields.items() if
+                sender is None or (sender in field.show)}
 
     def hydrate(self, obj, data, req):
         """
@@ -116,12 +125,12 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
         page = req.get_param_as_int('page', min=1) or 1
 
         limit = req.get_param_as_int('limit', min=1, max=self._meta.max_limit) or self._meta.limit
-        offset = (page-1) * limit
+        offset = (page - 1) * limit
 
         return {
             'meta': {
                 'limit': limit,
-                'offset': (page-1) * limit,
+                'offset': (page - 1) * limit,
                 'total_count': query.count(),
             },
 
