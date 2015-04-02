@@ -1,9 +1,13 @@
 from setuptools import setup
 
 setup(
-    name='Falcon-Wing',
+    name='falcon-wing',
     version='0.0.2',
     description='Falcon extension for building nice looking API',
+
+    author='Vlad Bakin',
+
+    install_requires=['falcon'],
 
     packages=['wing']
 )
