@@ -1,21 +1,6 @@
-from .fields import Field, create_resource_field
-
-
-def get_fields_from_cls(cls, excludes=None):
-    """
-    Get fields for ORM model class
-    :param cls: model class
-    """
-    fields = {}
-    if not excludes: excludes = []
-
-    for key, field in cls._meta.fields.items():
-        if key not in excludes:
-            field = create_resource_field(field)
-            if field is not None:
-                fields[key] = field
-
-    return fields
+from .fields import Field
+from .adapters import detect_adapter
+from .errors import DoesNotExist
 
 
 class ResourceOptions(object):
@@ -28,6 +13,7 @@ class ResourceOptions(object):
     object_class = None
     excludes = []
     primary_key = 'id'
+    adapter = None
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -49,7 +35,12 @@ class ModelDeclarativeMetaclass(type):
         new_class._meta = ResourceOptions(opts)
 
         if new_class._meta.object_class:
-            fields = get_fields_from_cls(new_class._meta.object_class, new_class._meta.excludes)
+            if not new_class._meta.adapter:
+                new_class._meta.adapter = detect_adapter(new_class._meta.object_class)
+
+            new_class._db = new_class._meta.adapter(new_class._meta.object_class)
+
+            fields = new_class._db.get_fields(new_class._meta.excludes)
 
             for field_name, obj in attrs.copy().items():
                 if isinstance(obj, Field):
@@ -57,64 +48,46 @@ class ModelDeclarativeMetaclass(type):
 
             new_class.fields = fields
 
-        new_class.custom_methods = []
-        for func_name, func in attrs.items():
-            func_uri = getattr(func, 'uri', None)
-            func_http_methods = getattr(func, 'http_methods', None)
+            new_class.custom_methods = []
+            for func_name, func in attrs.items():
+                func_uri = getattr(func, 'uri', None)
+                func_http_methods = getattr(func, 'http_methods', None)
 
-            if getattr(func, 'type', None) is not None:
-                new_class.custom_methods.append((func_name, func_uri, func_http_methods))
+                if getattr(func, 'type', None) is not None:
+                    new_class.custom_methods.append((func_name, func_uri, func_http_methods))
 
         return new_class
 
 
 class ModelResource(metaclass=ModelDeclarativeMetaclass):
+    fields = None
+    _db = None
+    _meta = None
+
     def get_object_list(self, filters=None, **kwargs):
         if not filters:
             filters = []
 
-        query = self._meta.object_class.select()
-
-        query = self.apply_filters(query, _make_filters_from_kwargs(kwargs))
-        return self.apply_filters(query, filters)
+        return self._db.select(filters + self._make_filters_from_kwargs(**kwargs))
 
     def get_object(self, **kwargs):
-        cls = self._meta.object_class
+        qs = self._db.select(self._make_filters_from_kwargs(**kwargs))[:1]
 
-        objects = self.apply_filters(self._meta.object_class.select(), _make_filters_from_kwargs(kwargs))
-        objects = objects[:1]
+        if len(qs) == 0:
+            raise DoesNotExist()
 
-        if len(objects) == 0:
-            raise cls.DoesNotExist()
-
-        return objects[0]
+        return qs[0]
 
     def create_object(self):
-        return self._meta.object_class()
+        return self._db.create_object()
 
     def delete_object(self, **kwargs):
-        q = self.apply_filters(self._meta.object_class.delete(), _make_filters_from_kwargs(kwargs))
-        return q.execute()
-
-    def apply_filters(self, query, filters):
-        cls = self._meta.object_class
-
-        conditions = []
-        for k, t, v in filters:
-            if hasattr(cls, k):
-                v = self.fields[k].convert(v)
-                conditions.append(_filter_get_expr(getattr(cls, k), t, v))
-
-        if conditions:
-            return query.where(*conditions)
-
-        return query
+        return self._db.delete(self._make_filters_from_kwargs(**kwargs))
 
     def dehydrate(self, obj, req, sender=None):
         """
         Dehydrate object
         :param obj: object
-        :param fields: visible fields, all by default
         """
         return {key: field.dehydrate(obj) for key, field in self.fields.items() if sender is None or (sender in field.show)}
 
@@ -139,9 +112,7 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
         """
         Paginate object using request
         :param req: request
-        :param data: iterable data object
         """
-
         page = req.get_param_as_int('page', min=1) or 1
 
         limit = req.get_param_as_int('limit', min=1, max=self._meta.max_limit) or self._meta.limit
@@ -157,34 +128,8 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
             'objects': [self.dehydrate(item, req, sender='list') for item in query[offset:offset + limit]]
         }
 
-def _filter_get_expr(field, filter_type, value):
-    if filter_type == 'exact':
-        return field == value
-    elif filter_type == 'gt':
-        return field > value
-    elif filter_type == 'gte':
-        return field >= value
-    elif filter_type == 'lt':
-        return field < value
-    elif filter_type == 'lte':
-        return field <= value
-    elif filter_type == 'contains':
-        return field.contains(value)
-    elif filter_type == 'startswith':
-        return field.startswith(value)
-    elif filter_type == 'endswith':
-        return field.endswith(value)
-    elif filter_type == 'is_null':
-        return field.is_null(value)
-    elif filter_type == 'in':
-        value = value.split(',')
-        return field.in_(value)
-    else:
-        raise NotImplemented
-
-
-def _make_filters_from_kwargs(args):
-    return [(k, 'exact', v) for k, v in args.items()]
+    def _make_filters_from_kwargs(self, **kwargs):
+        return [(k, 'exact', self.fields[k].convert(v)) for k, v in kwargs.items()]
 
 
 def custom_method(uri, http_methods=None):

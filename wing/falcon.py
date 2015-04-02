@@ -1,7 +1,6 @@
 import falcon
 from . import serialization
-from peewee import DoesNotExist
-import peewee
+from .errors import DoesNotExist
 
 
 class BaseFalconResource:
@@ -66,7 +65,7 @@ class CollectionFalconResource(BaseFalconResource):
 
             try:
                 obj = self.resource.get_object(**{pk_field: pk})
-            except peewee.DoesNotExist:
+            except DoesNotExist:
                 raise falcon.HTTPNotFound()
 
             self.resource.hydrate(obj, item, req)

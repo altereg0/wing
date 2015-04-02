@@ -1,35 +1,4 @@
 from datetime import datetime
-import peewee
-
-
-def create_resource_field(orm_field):
-    """
-    Create resource field based on ORM field type
-    :param orm_field: ORM field
-    """
-    mapping = {
-        peewee.PrimaryKeyField: IntegerField,
-        peewee.CharField: CharField,
-        peewee.TextField: TextField,
-        peewee.IntegerField: IntegerField,
-        peewee.BooleanField: BooleanField,
-        peewee.DateTimeField: DateTimeField,
-        peewee.DateField: DateField,
-    }
-
-    if isinstance(orm_field, peewee.Field):
-        is_required = not orm_field.null and orm_field.default is None
-        is_nullable = orm_field.null
-
-        if isinstance(orm_field, peewee.ForeignKeyField):
-            return
-
-        cls = mapping.get(type(orm_field))
-
-        if not cls:
-            raise Exception('Unsupported field type %s' % type(orm_field))
-
-        return cls(orm_field.name, is_required, null=is_nullable)
 
 
 class Field(object):
