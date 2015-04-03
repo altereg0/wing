@@ -2,6 +2,8 @@ from .fields import Field
 from .adapters import detect_adapter
 from .errors import DoesNotExist
 import falcon
+from .settings import DEFAULT_MAX_LIMIT, DEFAULT_LIMIT
+
 
 def custom_method(uri, http_methods=None):
     if not http_methods:
@@ -21,8 +23,8 @@ def custom_method(uri, http_methods=None):
 
 class ResourceOptions(object):
     allowed_methods = ['get', 'post', 'put', 'delete', 'patch']
-    limit = 20
-    max_limit = 1000
+    limit = DEFAULT_LIMIT
+    max_limit = DEFAULT_MAX_LIMIT
     resource_name = None
     filtering = {}
     ordering = []
