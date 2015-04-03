@@ -1,6 +1,22 @@
 from .fields import Field
 from .adapters import detect_adapter
 from .errors import DoesNotExist
+import falcon
+
+def custom_method(uri, http_methods=None):
+    if not http_methods:
+        http_methods = ['get']
+
+    if isinstance(http_methods, str):
+        http_methods = [http_methods]
+
+    def wrapper(func):
+        func.type = 'custom'
+        func.uri = uri
+        func.http_methods = http_methods
+        return func
+
+    return wrapper
 
 
 class ResourceOptions(object):
@@ -66,33 +82,104 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         return new_class
 
 
-class ModelResource(metaclass=ModelDeclarativeMetaclass):
+class ModelResource(object, metaclass=ModelDeclarativeMetaclass):
     _db = None
     _meta = None
 
     fields = None
 
-    def get_object_list(self, filters=None, **kwargs):
-        if not filters:
-            filters = []
+    def is_method_allowed(self, method, action):
+        return method in self._meta.allowed_methods
 
-        return self._db.select(filters + self._make_filters_from_kwargs(**kwargs))
+    def get_allowed_methods(self, action):
+        return self._meta.allowed_methods
 
-    def get_object(self, **kwargs):
-        qs = self._db.select(self._make_filters_from_kwargs(**kwargs))[:1]
+    def get_list(self, req, **kwargs):
+        filters = self._filters_from_request(req) + self._filters_from_kwargs(**kwargs)
+
+        offset = req.get_param_as_int('offset', min=0) or 0
+        limit = req.get_param_as_int('limit', min=1, max=self._meta.max_limit) or self._meta.limit
+
+        qs = self._db.select(filters)
+        meta, qs = self._paginate(qs, offset, limit)
+
+        return {
+            'meta': meta,
+            'objects': [self.dehydrate(obj, sender='list') for obj in qs]
+        }
+
+    def post_list(self, req, **kwargs):
+        data = req.context['data']
+
+        obj = self._db.create_object()
+        self.hydrate(obj, data)
+        self._db.save_object(obj)
+
+        return {
+            self._meta.primary_key: getattr(obj, self._meta.primary_key)
+        }
+
+    def put_list(self, req, **kwargs):
+        data = req.context['data']
+
+        pk_field = self._meta.primary_key
+
+        results = []
+        for item in data:
+            pk = item.get(pk_field)
+
+            if not pk:
+                raise falcon.HTTPBadRequest('No PK', 'Object primary key not found')
+
+            try:
+                obj = self.find_object(**{pk_field: pk})
+            except DoesNotExist:
+                raise falcon.HTTPBadRequest('', '')
+
+            self.hydrate(obj, item)
+
+            self._db.save_object(obj)
+
+            results.append(self.dehydrate(obj, sender='list'))
+
+        return results
+
+    def get_details(self, req, **kwargs):
+        try:
+            obj = self.find_object(**kwargs)
+        except DoesNotExist:
+            raise falcon.HTTPNotFound()
+
+        return self.dehydrate(obj, sender='details')
+
+    def put_details(self, req, **kwargs):
+        try:
+            obj = self.find_object(**kwargs)
+        except DoesNotExist:
+            raise falcon.HTTPNotFound()
+
+        data = req.context['data']
+
+        self.hydrate(obj, data)
+        self._db.save_object(obj)
+
+        return self.dehydrate(obj, sender='details')
+
+    def delete_details(self, req, **kwargs):
+        affected_rows = self._db.delete(self._filters_from_kwargs(**kwargs))
+
+        if not affected_rows:
+            raise falcon.HTTPNotFound()
+
+    def find_object(self, **kwargs):
+        qs = self._db.select(self._filters_from_kwargs(**kwargs))[:1]
 
         if len(qs) == 0:
             raise DoesNotExist()
 
         return qs[0]
 
-    def create_object(self):
-        return self._db.create_object()
-
-    def delete_object(self, **kwargs):
-        return self._db.delete(self._make_filters_from_kwargs(**kwargs))
-
-    def dehydrate(self, obj, req, sender=None):
+    def dehydrate(self, obj, sender=None):
         """
         Dehydrate object
         :param obj: object
@@ -100,7 +187,7 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
         return {key: field.dehydrate(obj) for key, field in self.fields.items() if
                 sender is None or (sender in field.show)}
 
-    def hydrate(self, obj, data, req):
+    def hydrate(self, obj, data):
         """
         Hydrate data to object
         :param obj: object
@@ -117,41 +204,27 @@ class ModelResource(metaclass=ModelDeclarativeMetaclass):
 
             field.hydrate(obj, value)
 
-    def paginate(self, req, query):
-        """
-        Paginate object using request
-        :param req: request
-        """
-        page = req.get_param_as_int('page', min=1) or 1
-
-        limit = req.get_param_as_int('limit', min=1, max=self._meta.max_limit) or self._meta.limit
-        offset = (page - 1) * limit
-
-        return {
-            'meta': {
-                'limit': limit,
-                'offset': (page - 1) * limit,
-                'total_count': query.count(),
-            },
-
-            'objects': [self.dehydrate(item, req, sender='list') for item in query[offset:offset + limit]]
+    def _paginate(self, qs, offset, limit):
+        meta = {
+            'limit': limit,
+            'offset': offset,
+            'total_count': qs.count(), # todo: make it using db adapter
         }
 
-    def _make_filters_from_kwargs(self, **kwargs):
+        return meta, qs[offset:offset + limit]
+
+    def _filters_from_request(self, req):
+        filters = []
+        for key, v in req.params.items():
+            try:
+                field, op = key.rsplit('__', 1)
+            except Exception:
+                field, op = key, 'exact'
+
+            if field in self._meta.filtering and op in self._meta.filtering[field]:
+                filters.append((field, op, v))
+
+        return filters
+
+    def _filters_from_kwargs(self, **kwargs):
         return [(k, 'exact', self.fields[k].convert(v)) for k, v in kwargs.items()]
-
-
-def custom_method(uri, http_methods=None):
-    if not http_methods:
-        http_methods = ['get']
-
-    if isinstance(http_methods, str):
-        http_methods = [http_methods]
-
-    def wrapper(func):
-        func.type = 'custom'
-        func.uri = uri
-        func.http_methods = http_methods
-        return func
-
-    return wrapper

@@ -7,6 +7,10 @@ class BaseFalconResource:
     def __init__(self, resource):
         self.resource = resource
 
+    def _check_method(self, method, action):
+        if not self.resource.is_method_allowed(method, action):
+            raise falcon.HTTPMethodNotAllowed(self.resource.get_allowed_methods(action))
+
 
 class CollectionFalconResource(BaseFalconResource):
     """
@@ -19,76 +23,33 @@ class CollectionFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
-        if 'get' not in self.resource._meta.allowed_methods:
-            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+        self._check_method('get', 'list')
 
-        filters = self._get_filters(req)
+        result = self.resource.get_list(req, **kwargs)
+        resp.body = serialization.dumps(result)
 
-        qs = self.resource.get_object_list(filters, **kwargs)
-        resp.body = serialization.dumps(self.resource.paginate(req, qs))
-
-    def on_post(self, req, resp):
+    def on_post(self, req, resp, **kwargs):
         """
         Create new object
         :param req: request object
         :param resp: response object
         """
-        if 'post' not in self.resource._meta.allowed_methods:
-            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+        self._check_method('post', 'list')
 
-        data = serialization.loads(req.stream.read().decode('utf-8'))
-
-        obj = self.resource.create_object()
-        self.resource.hydrate(obj, data, req)
-        obj.save()
+        req.context['data'] = serialization.loads(req.stream.read().decode('utf-8'))
+        result = self.resource.post_list(req, **kwargs)
 
         resp.status = falcon.HTTP_201
-        resp.body = serialization.dumps({
-            self.resource._meta.primary_key: obj.id
-        })
+        resp.body = serialization.dumps(result)
 
-    def on_put(self, req, resp):
-        if 'put' not in self.resource._meta.allowed_methods:
-            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+    def on_put(self, req, resp, **kwargs):
+        self._check_method('put', 'list')
+        req.context['data'] = serialization.loads(req.stream.read().decode('utf-8'))
 
-        data = serialization.loads(req.stream.read().decode('utf-8'))
-
-        results = []
-
-        pk_field = self.resource._meta.primary_key
-
-        for item in data:
-            pk = item.get(pk_field)
-
-            if not pk:
-                raise falcon.HTTPBadRequest('No PK', 'Object primary key not found')
-
-            try:
-                obj = self.resource.get_object(**{pk_field: pk})
-            except DoesNotExist:
-                raise falcon.HTTPNotFound()
-
-            self.resource.hydrate(obj, item, req)
-
-            obj.save()
-
-            results.append({pk_field: obj.id})
+        results = self.resource.put_list(req, **kwargs)
 
         resp.status = falcon.HTTP_200
         resp.body = serialization.dumps(results)
-
-    def _get_filters(self, req):
-        filters = []
-        for key, v in req.params.items():
-            try:
-                field, op = key.rsplit('__', 1)
-            except Exception:
-                field, op = key, 'exact'
-
-            if field in self.resource._meta.filtering and op in self.resource._meta.filtering[field]:
-                filters.append((field, op, v))
-
-        return filters
 
 
 class ItemFalconResource(BaseFalconResource):
@@ -103,17 +64,12 @@ class ItemFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
+        self._check_method('get', 'details')
 
-        if 'get' not in self.resource._meta.allowed_methods:
-            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
-
-        try:
-            obj = self.resource.get_object(**kwargs)
-        except DoesNotExist:
-            raise falcon.HTTPNotFound()
+        result = self.resource.get_details(req, **kwargs)
 
         resp.status = falcon.HTTP_200
-        resp.body = serialization.dumps(self.resource.dehydrate(obj, req, sender='details'))
+        resp.body = serialization.dumps(result)
 
     def on_put(self, req, resp, **kwargs):
         """
@@ -122,20 +78,13 @@ class ItemFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
-        if 'put' not in self.resource._meta.allowed_methods:
-            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+        self._check_method('put', 'details')
 
-        try:
-            obj = self.resource.get_object(**kwargs)
-        except DoesNotExist:
-            raise falcon.HTTPNotFound()
-
-        data = serialization.loads(req.stream.read().decode('utf-8'))
-        self.resource.hydrate(obj, data, req)
-        obj.save()
+        req.context['data'] = serialization.loads(req.stream.read().decode('utf-8'))
+        result = self.resource.put_details(req, **kwargs)
 
         resp.status = falcon.HTTP_200
-        resp.body = serialization.dumps(self.resource.dehydrate(obj, req))
+        resp.body = serialization.dumps(result)
 
     def on_delete(self, req, resp, **kwargs):
         """
@@ -144,12 +93,11 @@ class ItemFalconResource(BaseFalconResource):
         :param req: request object
         :param resp: response object
         """
-        if 'delete' not in self.resource._meta.allowed_methods:
-            raise falcon.HTTPMethodNotAllowed(self.resource._meta.allowed_methods)
+        self._check_method('delete', 'details')
 
-        affected_rows = self.resource.delete_object(**kwargs)
+        self.resource.delete_details(req, **kwargs)
 
-        resp.status = falcon.HTTP_204 if affected_rows > 0 else falcon.HTTP_404
+        resp.status = falcon.HTTP_204
 
 
 class FunctionResource():

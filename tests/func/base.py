@@ -59,10 +59,10 @@ class AppTestCase(FuncTestCase):
         data = json.loads(resp.content)
 
         self.assertDictEqual({
-                                 'offset': 0,
-                                 'limit': 20,
-                                 'total_count': 2
-                             }, data['meta'])
+            'offset': 0,
+            'limit': 20,
+            'total_count': 2
+        }, data['meta'])
 
         objects = data['objects']
         self.assertEqual(2, len(objects))
@@ -117,6 +117,31 @@ class AppTestCase(FuncTestCase):
         self.assertEqual(2, user['id'])
         self.assertEqual('test2-updated', user['name'])
         self.assertEqual(True, user['is_active'])
+
+    def test_batch_update(self):
+        data = [{
+                    'id': 2,
+                    'name': 'test2-updated',
+                    'is_active': True,
+                },
+                {
+                    'id': 1,
+                    'name': 'test1-updated',
+                    'is_active': True,
+                }]
+        resp = self.request('PUT', '/v1/users/', body=json.dumps(data))
+
+        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
+        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
+        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
+                        'Default content type should be application/json')
+
+        data = json.loads(resp.content)
+
+        self.assertEqual(2, len(data))
+
+        self.assertEqual('test2-updated', data[0]['name'])
+        self.assertEqual('test1-updated', data[1]['name'])
 
     def test_user_delete(self):
         resp = self.request('DELETE', '/v1/users/2')
