@@ -84,8 +84,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
         return new_class
 
 
-class ModelResource(object, metaclass=ModelDeclarativeMetaclass):
-    _db = None
+class Resource(metaclass=DeclarativeMetaclass):
     _meta = None
 
     fields = None
@@ -95,6 +94,69 @@ class ModelResource(object, metaclass=ModelDeclarativeMetaclass):
 
     def get_allowed_methods(self, action):
         return self._meta.allowed_methods
+
+    def get_list(self, req, **kwargs):
+        raise NotImplemented
+
+    def post_list(self, req, **kwargs):
+        raise NotImplemented
+
+    def put_list(self, req, **kwargs):
+        raise NotImplemented
+
+    def get_details(self, req, **kwargs):
+        raise NotImplemented
+
+    def put_details(self, req, **kwargs):
+        raise NotImplemented
+
+    def delete_details(self, req, **kwargs):
+        raise NotImplemented
+
+    def dehydrate(self, obj, sender=None):
+        """
+        Dehydrate object
+        :param obj: object
+        """
+        return {key: field.dehydrate(obj) for key, field in self.fields.items() if
+                sender is None or (sender in field.show)}
+
+    def hydrate(self, obj, data):
+        """
+        Hydrate data to object
+        :param obj: object
+        :param data: data as dictionary
+        """
+        for key, field in self.fields.items():
+            if field.readonly:
+                continue
+
+            if key not in data:
+                continue
+
+            value = data.get(key, None)
+
+            field.hydrate(obj, value)
+
+    def _filters_from_request(self, req):
+        filters = []
+        for key, v in req.params.items():
+            try:
+                field, op = key.rsplit('__', 1)
+            except Exception:
+                field, op = key, 'exact'
+
+            if field in self._meta.filtering and op in self._meta.filtering[field]:
+                filters.append((field, op, v))
+
+        return filters
+
+    def _filters_from_kwargs(self, **kwargs):
+        return [(k, 'exact', self.fields[k].convert(v)) for k, v in kwargs.items()]
+
+
+class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
+    _db = None
 
     def get_list(self, req, **kwargs):
         filters = self._filters_from_request(req) + self._filters_from_kwargs(**kwargs)
@@ -181,31 +243,6 @@ class ModelResource(object, metaclass=ModelDeclarativeMetaclass):
 
         return qs[0]
 
-    def dehydrate(self, obj, sender=None):
-        """
-        Dehydrate object
-        :param obj: object
-        """
-        return {key: field.dehydrate(obj) for key, field in self.fields.items() if
-                sender is None or (sender in field.show)}
-
-    def hydrate(self, obj, data):
-        """
-        Hydrate data to object
-        :param obj: object
-        :param data: data as dictionary
-        """
-        for key, field in self.fields.items():
-            if field.readonly:
-                continue
-
-            if key not in data:
-                continue
-
-            value = data.get(key, None)
-
-            field.hydrate(obj, value)
-
     def _paginate(self, qs, offset, limit):
         meta = {
             'limit': limit,
@@ -214,19 +251,3 @@ class ModelResource(object, metaclass=ModelDeclarativeMetaclass):
         }
 
         return meta, qs[offset:offset + limit]
-
-    def _filters_from_request(self, req):
-        filters = []
-        for key, v in req.params.items():
-            try:
-                field, op = key.rsplit('__', 1)
-            except Exception:
-                field, op = key, 'exact'
-
-            if field in self._meta.filtering and op in self._meta.filtering[field]:
-                filters.append((field, op, v))
-
-        return filters
-
-    def _filters_from_kwargs(self, **kwargs):
-        return [(k, 'exact', self.fields[k].convert(v)) for k, v in kwargs.items()]
