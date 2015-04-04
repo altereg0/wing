@@ -1,6 +1,5 @@
 import falcon
-from . import serialization
-from .errors import DoesNotExist
+from .serialization import get_serializer
 
 
 class BaseFalconResource:
@@ -26,7 +25,8 @@ class CollectionFalconResource(BaseFalconResource):
         self._check_method('get', 'list')
 
         result = self.resource.get_list(req, **kwargs)
-        resp.body = serialization.dumps(result)
+        serializer = get_serializer(req)
+        resp.body = serializer.dumps(result)
 
     def on_post(self, req, resp, **kwargs):
         """
@@ -35,21 +35,24 @@ class CollectionFalconResource(BaseFalconResource):
         :param resp: response object
         """
         self._check_method('post', 'list')
+        serializer = get_serializer(req)
 
-        req.context['data'] = serialization.loads(req.stream.read().decode('utf-8'))
+        req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
         result = self.resource.post_list(req, **kwargs)
 
         resp.status = falcon.HTTP_201
-        resp.body = serialization.dumps(result)
+        resp.body = serializer.dumps(result)
 
     def on_put(self, req, resp, **kwargs):
         self._check_method('put', 'list')
-        req.context['data'] = serialization.loads(req.stream.read().decode('utf-8'))
+        serializer = get_serializer(req)
+
+        req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
 
         results = self.resource.put_list(req, **kwargs)
 
         resp.status = falcon.HTTP_200
-        resp.body = serialization.dumps(results)
+        resp.body = serializer.dumps(results)
 
 
 class ItemFalconResource(BaseFalconResource):
@@ -65,11 +68,12 @@ class ItemFalconResource(BaseFalconResource):
         :param resp: response object
         """
         self._check_method('get', 'details')
+        serializer = get_serializer(req)
 
         result = self.resource.get_details(req, **kwargs)
 
         resp.status = falcon.HTTP_200
-        resp.body = serialization.dumps(result)
+        resp.body = serializer.dumps(result)
 
     def on_put(self, req, resp, **kwargs):
         """
@@ -79,12 +83,13 @@ class ItemFalconResource(BaseFalconResource):
         :param resp: response object
         """
         self._check_method('put', 'details')
+        serializer = get_serializer(req)
 
-        req.context['data'] = serialization.loads(req.stream.read().decode('utf-8'))
+        req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
         result = self.resource.put_details(req, **kwargs)
 
         resp.status = falcon.HTTP_200
-        resp.body = serialization.dumps(result)
+        resp.body = serializer.dumps(result)
 
     def on_delete(self, req, resp, **kwargs):
         """
@@ -109,7 +114,8 @@ def resource_func(func):
         result = func(req, resp, *args, **kwargs)
 
         if result is not None:
-            resp.body = serialization.dumps(result)
+            serializer = get_serializer(req)
+            resp.body = serializer.dumps(result)
 
     return wrapper
 
