@@ -21,6 +21,8 @@ class User(peewee.Model):
 
 
 class UserResource(wing.ModelResource):
+    modification_date = wing.fields.DateTimeField('modification_date', required=False)
+
     class Meta:
         resource_name = 'users'
         filtering = {

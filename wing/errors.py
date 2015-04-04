@@ -4,3 +4,7 @@ class DoesNotExist(Exception):
 
 class NoAdapter(Exception):
     pass
+
+
+class MissingRequiredField(Exception):
+    pass

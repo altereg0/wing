@@ -1,6 +1,6 @@
 from .fields import Field
 from .adapters import detect_adapter
-from .errors import DoesNotExist
+from .errors import DoesNotExist, MissingRequiredField
 import falcon
 from .settings import DEFAULT_MAX_LIMIT, DEFAULT_LIMIT
 
@@ -132,6 +132,9 @@ class Resource(metaclass=DeclarativeMetaclass):
                 continue
 
             if key not in data:
+                if field.required:
+                    raise MissingRequiredField('Field "%s" is required' % key)
+
                 continue
 
             value = data.get(key, None)

@@ -95,6 +95,9 @@ def create_resource_field(orm_field):
 
     if isinstance(orm_field, peewee.Field):
         is_required = not orm_field.null and orm_field.default is None
+        if isinstance(orm_field, peewee.PrimaryKeyField):
+            is_required = False
+
         is_nullable = orm_field.null
 
         if isinstance(orm_field, peewee.ForeignKeyField):
