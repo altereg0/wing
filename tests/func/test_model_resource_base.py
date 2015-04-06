@@ -139,6 +139,7 @@ class AppTestCase(FuncTestCase):
                         'Default content type should be application/json')
 
         data = json.loads(resp.content)
+        data = data['objects']
 
         self.assertEqual(2, len(data))
 

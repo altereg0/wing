@@ -199,12 +199,12 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
             pk = item.get(pk_field)
 
             if not pk:
-                raise falcon.HTTPBadRequest('No PK', 'Object primary key not found')
-
-            try:
-                obj = self.find_object(**{pk_field: pk})
-            except DoesNotExist:
-                raise falcon.HTTPBadRequest('', '')
+                obj = self._db.create_object()
+            else:
+                try:
+                    obj = self.find_object(**{pk_field: pk})
+                except DoesNotExist:
+                    raise falcon.HTTPBadRequest('', '')
 
             self.hydrate(obj, item)
 
@@ -212,7 +212,9 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
 
             results.append(self.dehydrate(obj, sender='list'))
 
-        return results
+        return {
+            'objects': results
+        }
 
     def get_details(self, req, **kwargs):
         try:
