@@ -162,7 +162,10 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
     _db = None
 
     def get_list(self, req, **kwargs):
-        filters = self._filters_from_request(req) + self._filters_from_kwargs(**kwargs)
+        try:
+            filters = self._filters_from_request(req) + self._filters_from_kwargs(**kwargs)
+        except DoesNotExist:
+            raise falcon.HTTPNotFound()
 
         offset = req.get_param_as_int('offset', min=0) or 0
         limit = req.get_param_as_int('limit', min=1, max=self._meta.max_limit) or self._meta.limit
