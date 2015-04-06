@@ -79,7 +79,7 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
 
             new_class._db = new_class._meta.adapter(new_class._meta.object_class)
 
-            new_class.fields = new_class._db.get_fields(new_class._meta.excludes + list(new_class.fields.keys()))
+            new_class.fields += new_class._db.get_fields(new_class._meta.excludes + list(new_class.fields.keys()))
 
         return new_class
 
