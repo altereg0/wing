@@ -154,6 +154,28 @@ class AppTestCase(FuncTestCase):
         resp = self.request('DELETE', '/v1/users/2')
         self.assertEqual('404 Not Found', resp.status, 'Response should be 404 Not Found')
 
+        resp = self.request('GET', '/v1/users/2')
+        self.assertEqual('404 Not Found', resp.status, 'Response should be 404 Not Found')
+
+    def test_batch_delete(self):
+        resp = self.request('DELETE', '/v1/users/')
+        self.assertEqual('204 No Content', resp.status, 'Response should be 204 No Content')
+        self.assertEqual('', resp.content)
+
+        resp = self.request('GET', '/v1/users/')
+        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
+        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
+        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
+                        'Default content type should be application/json')
+
+        data = json.loads(resp.content)
+
+        self.assertDictEqual({
+            'offset': 0,
+            'limit': 20,
+            'total_count': 0
+        }, data['meta'])
+
     def test_wrong_http_method(self):
         resp = self.request('POST', '/v1/users/2')
 

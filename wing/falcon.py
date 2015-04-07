@@ -54,6 +54,15 @@ class CollectionFalconResource(BaseFalconResource):
         resp.status = falcon.HTTP_200
         resp.body = serializer.dumps(results)
 
+    def on_delete(self, req, resp, **kwargs):
+        self._check_method('delete', 'list')
+
+        results = self.resource.delete_list(req, **kwargs)
+
+        resp.status = falcon.HTTP_204
+        serializer = get_serializer(req)
+        resp.body = serializer.dumps(results)
+
 
 class ItemFalconResource(BaseFalconResource):
     """

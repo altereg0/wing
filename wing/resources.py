@@ -104,6 +104,9 @@ class Resource(metaclass=DeclarativeMetaclass):
     def put_list(self, req, **kwargs):
         raise NotImplemented
 
+    def delete_list(self, req, **kwargs):
+        raise NotImplemented
+
     def get_details(self, req, **kwargs):
         raise NotImplemented
 
@@ -188,6 +191,14 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         return {
             self._meta.primary_key: getattr(obj, self._meta.primary_key)
         }
+
+    def delete_list(self, req, **kwargs):
+        try:
+            filters = self._filters_from_request(req) + self._filters_from_kwargs(**kwargs)
+        except DoesNotExist:
+            raise falcon.HTTPNotFound()
+
+        self._db.delete(filters)
 
     def put_list(self, req, **kwargs):
         data = req.context['data']
