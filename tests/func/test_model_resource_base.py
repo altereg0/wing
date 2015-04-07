@@ -130,7 +130,11 @@ class AppTestCase(FuncTestCase):
                     'id': 1,
                     'name': 'test1-updated',
                     'is_active': True,
-                }]
+                }, {
+                    'name': 'test3-new',
+                    'is_active': True,
+                },
+        ]
         resp = self.request('PUT', '/v1/users/', body=json.dumps(data))
 
         self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
@@ -141,10 +145,11 @@ class AppTestCase(FuncTestCase):
         data = json.loads(resp.content)
         data = data['objects']
 
-        self.assertEqual(2, len(data))
+        self.assertEqual(3, len(data))
 
         self.assertEqual('test2-updated', data[0]['name'])
         self.assertEqual('test1-updated', data[1]['name'])
+        self.assertEqual('test3-new', data[2]['name'])
 
     def test_user_delete(self):
         resp = self.request('DELETE', '/v1/users/2')
