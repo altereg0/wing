@@ -162,7 +162,8 @@ class Resource(metaclass=DeclarativeMetaclass):
 
             field.hydrate(obj, value)
 
-    def _filters_from_request(self, req):
+    @classmethod
+    def _filters_from_request(cls, req):
         filters = []
         for key, v in req.params.items():
             try:
@@ -170,13 +171,14 @@ class Resource(metaclass=DeclarativeMetaclass):
             except Exception:
                 field, op = key, 'exact'
 
-            if field in self._meta.filtering and op in self._meta.filtering[field]:
+            if field in cls._meta.filtering and op in cls._meta.filtering[field]:
                 filters.append((field, op, v))
 
         return filters
 
-    def _filters_from_kwargs(self, **kwargs):
-        return [(k, 'exact', self.fields[k].convert(v)) for k, v in kwargs.items()]
+    @classmethod
+    def _filters_from_kwargs(cls, **kwargs):
+        return [(k, 'exact', cls.fields[k].convert(v)) for k, v in kwargs.items()]
 
 
 class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):

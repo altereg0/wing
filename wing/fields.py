@@ -4,9 +4,7 @@ from .errors import DoesNotExist
 
 class Field(object):
     """
-    Hydrator field
-
-    Implement hydrate and dehydrate methods
+    Resource field
     """
 
     def __init__(self, attribute, required=False, null=False, readonly=False, show=None):
@@ -87,14 +85,13 @@ class ForeignKeyField(Field):
         """dehydrate field from object"""
         rel_obj = getattr(obj, self.attribute)
 
-        return getattr(rel_obj, self.rel_resource._meta.primary_key)
+        return getattr(rel_obj, self.rel_resource._meta.primary_key) if rel_obj is not None else None
 
     def convert(self, value):
-        # todo: how to rewrite it normally?
         rel_pk = self.rel_resource._meta.primary_key
         rel_field = self.rel_resource.fields[rel_pk]
-        filters = self.rel_resource._filters_from_kwargs(**{rel_pk: rel_field.convert(value)})
 
+        filters = self.rel_resource._filters_from_kwargs(**{rel_pk: rel_field.convert(value)})
         qs = self.rel_resource._db.select(filters)[:1]
 
         if len(qs) == 0:
