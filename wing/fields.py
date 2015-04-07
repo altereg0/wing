@@ -10,7 +10,7 @@ class Field(object):
     """
 
     def __init__(self, attribute, required=False, null=False, readonly=False, show=None):
-        if not show:
+        if show is None:
             show = ['details', 'list']
 
         self.attribute = attribute
