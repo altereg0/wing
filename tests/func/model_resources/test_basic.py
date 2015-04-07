@@ -1,37 +1,11 @@
-from datetime import datetime
 import json
-import peewee
 from tests.func import FuncTestCase
+from tests.func.model_resources.resources import UserResource
+from tests.func.model_resources.models import User
 import wing
 
-db = peewee.SqliteDatabase(':memory:')
 
-
-class User(peewee.Model):
-    name = peewee.CharField()
-    is_active = peewee.BooleanField(default=False)
-    modification_date = peewee.DateTimeField()
-
-    class Meta:
-        database = db
-
-    def save(self, force_insert=False, only=None):
-        self.modification_date = datetime.now()
-        super().save(force_insert, only)
-
-
-class UserResource(wing.ModelResource):
-    modification_date = wing.fields.DateTimeField('modification_date', required=False)
-
-    class Meta:
-        resource_name = 'users'
-        filtering = {
-            'name': ['exact', 'startswith']
-        }
-        object_class = User
-
-
-class AppTestCase(FuncTestCase):
+class TestCase(FuncTestCase):
     is_safe = False
 
     @classmethod
@@ -49,7 +23,7 @@ class AppTestCase(FuncTestCase):
 
         self.is_safe = False
 
-    def test_users_list(self):
+    def test_show_list(self):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/users')
@@ -72,7 +46,7 @@ class AppTestCase(FuncTestCase):
         self.assertEqual('test1', objects[0]['name'])
         self.assertEqual('test2', objects[1]['name'])
 
-    def test_user_details(self):
+    def test_show_details(self):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/users/1')
@@ -87,7 +61,7 @@ class AppTestCase(FuncTestCase):
         self.assertEqual('test1', user['name'])
         self.assertEqual(False, user['is_active'])
 
-    def test_user_add(self):
+    def test_add(self):
         data = {
             'name': 'test3',
             'is_active': True,
@@ -102,7 +76,7 @@ class AppTestCase(FuncTestCase):
         result = json.loads(resp.content)
         self.assertEqual(3, result['id'])
 
-    def test_user_update(self):
+    def test_update_details(self):
         data = {
             'name': 'test2-updated',
             'is_active': True,
@@ -151,7 +125,7 @@ class AppTestCase(FuncTestCase):
         self.assertEqual('test1-updated', data[1]['name'])
         self.assertEqual('test3-new', data[2]['name'])
 
-    def test_user_delete(self):
+    def test_delete(self):
         resp = self.request('DELETE', '/v1/users/2')
         self.assertEqual('204 No Content', resp.status, 'Response should be 204 No Content')
         self.assertEqual('', resp.content)
@@ -231,3 +205,4 @@ class AppTestCase(FuncTestCase):
 
         objects = data['objects']
         self.assertEqual(2, len(objects))
+
