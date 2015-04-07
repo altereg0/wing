@@ -1,6 +1,6 @@
 from .fields import Field
 from .adapters import detect_adapter
-from .errors import DoesNotExist, MissingRequiredField
+from .errors import DoesNotExist, MissingRequiredFieldError, NotNullFieldError, FieldValidationError
 import falcon
 from .settings import DEFAULT_MAX_LIMIT, DEFAULT_LIMIT
 
@@ -151,11 +151,14 @@ class Resource(metaclass=DeclarativeMetaclass):
 
             if key not in data:
                 if field.required:
-                    raise MissingRequiredField('Field "%s" is required' % key)
+                    raise MissingRequiredFieldError(key)
 
                 continue
 
             value = data.get(key, None)
+
+            if not field.null and value is None:
+                raise NotNullFieldError(key)
 
             field.hydrate(obj, value)
 
@@ -203,8 +206,8 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
 
         try:
             self.hydrate(obj, data)
-        except MissingRequiredField as e:
-            raise falcon.HTTPBadRequest('Missing field', e.args[0])
+        except FieldValidationError as e:
+            raise falcon.HTTPBadRequest('Bad request', str(e))
 
         self._db.save_object(obj)
 
