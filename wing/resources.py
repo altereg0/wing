@@ -200,7 +200,12 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         data = req.context['data']
 
         obj = self._db.create_object()
-        self.hydrate(obj, data)
+
+        try:
+            self.hydrate(obj, data)
+        except MissingRequiredField as e:
+            raise falcon.HTTPBadRequest('Missing field', e.args[0])
+
         self._db.save_object(obj)
 
         return {
