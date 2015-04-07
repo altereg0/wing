@@ -23,6 +23,8 @@ def custom_method(uri, http_methods=None):
 
 class ResourceOptions(object):
     allowed_methods = ['get', 'post', 'put', 'delete', 'patch']
+    list_allowed_methods = None
+    details_allowed_methods = None
     limit = DEFAULT_LIMIT
     max_limit = DEFAULT_MAX_LIMIT
     resource_name = None
@@ -42,6 +44,14 @@ class ResourceOptions(object):
                 # No internals please.
                 if not override_name.startswith('_'):
                     overrides[override_name] = getattr(meta, override_name)
+
+        allowed_methods = overrides.get('allowed_methods', ResourceOptions.allowed_methods)
+
+        if overrides.get('list_allowed_methods', None) is None:
+            overrides['list_allowed_methods'] = allowed_methods
+
+        if overrides.get('details_allowed_methods', None) is None:
+            overrides['details_allowed_methods'] = allowed_methods
 
         return object.__new__(type('ResourceOptions', (cls,), overrides))
 
@@ -90,10 +100,15 @@ class Resource(metaclass=DeclarativeMetaclass):
     fields = None
 
     def is_method_allowed(self, method, action):
-        return method in self._meta.allowed_methods
+        return method in self.get_allowed_methods(action)
 
     def get_allowed_methods(self, action):
-        return self._meta.allowed_methods
+        if action == 'list':
+            return self._meta.list_allowed_methods
+        elif action == 'details':
+            return self._meta.details_allowed_methods
+        else:
+            return self._meta.allowed_methods
 
     def get_list(self, req, **kwargs):
         raise NotImplemented
