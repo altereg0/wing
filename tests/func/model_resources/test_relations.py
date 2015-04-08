@@ -70,6 +70,25 @@ class TestCase(FuncTestCase):
         self.assertEqual('post11', objects[0]['slug'])
         self.assertEqual('post12', objects[1]['slug'])
 
+    def test_create_nested_resource(self):
+        new_post = {
+            'slug': 'post-new',
+            'title': 'New',
+            'category': 2
+        }
+
+        resp = self.request('POST', '/v1/categories/1/posts/', body=json.dumps(new_post))
+        self._check_response(resp, '201 Created')
+
+        data = json.loads(resp.content)
+        self.assertIsNotNone(data.get('id'))
+
+        resp = self.request('GET', '/v1/categories/1/posts/%d' % data.get('id'))
+        self._check_response(resp)
+        data = json.loads(resp.content)
+        self.assertEqual(new_post['slug'], data['slug'])
+        self.assertEqual(1, data['category'], 'Category should be rewritten by params from URL')
+
     def _check_response(self, resp, status='200 OK'):
         self.assertEqual(status, resp.status, 'Response should be %s' % status)
         self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')

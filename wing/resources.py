@@ -1,3 +1,4 @@
+from copy import copy
 from .fields import Field
 from .adapters import detect_adapter
 from .errors import DoesNotExist, MissingRequiredFieldError, NotNullFieldError, FieldValidationError
@@ -202,7 +203,8 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         }
 
     def post_list(self, req, **kwargs):
-        data = req.context['data']
+        data = copy(req.context['data'])
+        data.update(kwargs)
 
         obj = self._db.create_object()
 
@@ -233,12 +235,16 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         results = []
         for item in data:
             pk = item.get(pk_field)
+            item.update(kwargs)
 
             if not pk:
                 obj = self._db.create_object()
             else:
                 try:
-                    obj = self.find_object(**{pk_field: pk})
+                    params = copy(kwargs)
+                    params[pk_field] = pk
+
+                    obj = self.find_object(**params)
                 except DoesNotExist:
                     raise falcon.HTTPBadRequest('', '')
 
