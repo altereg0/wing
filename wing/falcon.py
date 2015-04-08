@@ -116,10 +116,11 @@ class ItemFalconResource(BaseFalconResource):
         self._check_method('delete', 'details')
         serializer = get_serializer(req)
 
-        self.resource.delete_details(req, **kwargs)
+        result = self.resource.delete_details(req, **kwargs)
 
         resp.status = falcon.HTTP_204
         resp.content_type = serializer.content_type
+        resp.body = serializer.dumps(result)
 
 
 class FunctionResource():
