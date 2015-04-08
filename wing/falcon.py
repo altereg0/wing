@@ -26,6 +26,7 @@ class CollectionFalconResource(BaseFalconResource):
 
         result = self.resource.get_list(req, **kwargs)
         serializer = get_serializer(req)
+        resp.content_type = serializer.content_type
         resp.body = serializer.dumps(result)
 
     def on_post(self, req, resp, **kwargs):
@@ -41,6 +42,7 @@ class CollectionFalconResource(BaseFalconResource):
         result = self.resource.post_list(req, **kwargs)
 
         resp.status = falcon.HTTP_201
+        resp.content_type = serializer.content_type
         resp.body = serializer.dumps(result)
 
     def on_put(self, req, resp, **kwargs):
@@ -52,6 +54,7 @@ class CollectionFalconResource(BaseFalconResource):
         results = self.resource.put_list(req, **kwargs)
 
         resp.status = falcon.HTTP_200
+        resp.content_type = serializer.content_type
         resp.body = serializer.dumps(results)
 
     def on_delete(self, req, resp, **kwargs):
@@ -61,6 +64,7 @@ class CollectionFalconResource(BaseFalconResource):
 
         resp.status = falcon.HTTP_204
         serializer = get_serializer(req)
+        resp.content_type = serializer.content_type
         resp.body = serializer.dumps(results)
 
 
@@ -82,6 +86,7 @@ class ItemFalconResource(BaseFalconResource):
         result = self.resource.get_details(req, **kwargs)
 
         resp.status = falcon.HTTP_200
+        resp.content_type = serializer.content_type
         resp.body = serializer.dumps(result)
 
     def on_put(self, req, resp, **kwargs):
@@ -98,6 +103,7 @@ class ItemFalconResource(BaseFalconResource):
         result = self.resource.put_details(req, **kwargs)
 
         resp.status = falcon.HTTP_200
+        resp.content_type = serializer.content_type
         resp.body = serializer.dumps(result)
 
     def on_delete(self, req, resp, **kwargs):
@@ -108,10 +114,12 @@ class ItemFalconResource(BaseFalconResource):
         :param resp: response object
         """
         self._check_method('delete', 'details')
+        serializer = get_serializer(req)
 
         self.resource.delete_details(req, **kwargs)
 
         resp.status = falcon.HTTP_204
+        resp.content_type = serializer.content_type
 
 
 class FunctionResource():

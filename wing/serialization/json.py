@@ -1,6 +1,8 @@
 from datetime import datetime
 import json
 
+content_type = 'application/json'
+
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
