@@ -73,6 +73,9 @@ def _filter_get_expr(field, filter_type, value):
     elif filter_type == 'is_null':
         return field.is_null(value)
     elif filter_type == 'in':
+        if not isinstance(value, list):
+            value = value.split(',')
+
         return field.in_(value)
     else:
         raise NotImplemented
