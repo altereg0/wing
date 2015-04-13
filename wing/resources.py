@@ -230,6 +230,12 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
     def put_list(self, req, **kwargs):
         data = req.context['data']
 
+        #todo: optimize checking?
+        try:
+            self.find_object(**kwargs)
+        except DoesNotExist:
+            raise falcon.HTTPNotFound()
+
         pk_field = self._meta.primary_key
 
         results = []
@@ -240,13 +246,13 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
             if not pk:
                 obj = self._db.create_object()
             else:
-                try:
-                    params = copy(kwargs)
-                    params[pk_field] = pk
+                params = copy(kwargs)
+                params[pk_field] = pk
 
+                try:
                     obj = self.find_object(**params)
                 except DoesNotExist:
-                    raise falcon.HTTPBadRequest('', '')
+                    raise falcon.HTTPBadRequest('Object not found', 'Object with primary key "%s" not found' % pk)
 
             self.hydrate(obj, item)
 
