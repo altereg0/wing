@@ -303,7 +303,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         try:
             self._db.save_object(obj)
         except IntegrityError as e:
-            raise falcon.HTTPBadRequest('Integrity error', e.args[0])
+            raise falcon.HTTPBadRequest('Integrity error', *e.args[0])
 
     def _paginate(self, qs, offset, limit):
         meta = {
