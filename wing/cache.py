@@ -22,8 +22,7 @@ class DummyCache:
 
 
 class LocMemCache:
-    def __init__(self, default_ttl=3600):
-        self.ttl = default_ttl
+    def __init__(self):
         self.data = {}
 
     def add(self, key, val, ttl=None):
@@ -35,7 +34,6 @@ class LocMemCache:
         return True
 
     def set(self, key, val, ttl=None):
-        ttl = self.ttl or ttl
         self.data[key] = (val, datetime.now().timestamp() + ttl)
 
     def get(self, key):
