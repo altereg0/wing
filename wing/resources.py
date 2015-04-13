@@ -1,7 +1,7 @@
 from copy import copy
 from .fields import Field
 from .adapters import detect_adapter
-from .errors import DoesNotExist, MissingRequiredFieldError, NotNullFieldError, FieldValidationError
+from .errors import DoesNotExist, MissingRequiredFieldError, NotNullFieldError, FieldValidationError, IntegrityError
 import falcon
 from .settings import DEFAULT_MAX_LIMIT, DEFAULT_LIMIT
 
@@ -213,7 +213,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         except FieldValidationError as e:
             raise falcon.HTTPBadRequest('Bad request', str(e))
 
-        self._db.save_object(obj)
+        self.save_obj(obj)
 
         return {
             self._meta.primary_key: getattr(obj, self._meta.primary_key)
@@ -256,7 +256,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
 
             self.hydrate(obj, item)
 
-            self._db.save_object(obj)
+            self.save_obj(obj)
 
             results.append(self.dehydrate(obj, sender='list'))
 
@@ -281,7 +281,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         data = req.context['data']
 
         self.hydrate(obj, data)
-        self._db.save_object(obj)
+        self.save_obj(obj)
 
         return self.dehydrate(obj, sender='details')
 
@@ -298,6 +298,12 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
             raise DoesNotExist()
 
         return qs[0]
+
+    def save_obj(self, obj):
+        try:
+            self._db.save_object(obj)
+        except IntegrityError as e:
+            raise falcon.HTTPBadRequest('Integrity error', e.args[0])
 
     def _paginate(self, qs, offset, limit):
         meta = {

@@ -23,3 +23,7 @@ class MissingRequiredFieldError(FieldValidationError):
 class NotNullFieldError(FieldValidationError):
     def __init__(self, field, message=None):
         super().__init__(field, message or 'Not null field constraint failed')
+
+
+class IntegrityError(Exception):
+    pass

@@ -1,6 +1,6 @@
 import peewee
 from wing.fields import *
-
+from ..errors import IntegrityError
 
 class Adapter(object):
     def __init__(self, cls):
@@ -29,7 +29,10 @@ class Adapter(object):
         return self.cls()
 
     def save_object(self, obj):
-        return obj.save()
+        try:
+            obj.save()
+        except peewee.IntegrityError as e:
+            raise IntegrityError(e.args)
 
     def get_fields(self, excludes=None):
         fields = {}
