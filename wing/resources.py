@@ -169,7 +169,7 @@ class Resource(metaclass=DeclarativeMetaclass):
         for key, v in req.params.items():
             try:
                 field, op = key.rsplit('__', 1)
-            except Exception:
+            except ValueError:
                 field, op = key, 'exact'
 
             if field in cls._meta.filtering and op in cls._meta.filtering[field]:
@@ -230,7 +230,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
     def put_list(self, req, **kwargs):
         data = req.context['data']
 
-        #todo: optimize checking?
+        # todo: optimize checking?
         try:
             self.find_object(**kwargs)
         except DoesNotExist:
@@ -309,7 +309,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         meta = {
             'limit': limit,
             'offset': offset,
-            'total_count': qs.count(), # todo: make it using db adapter
+            'total_count': qs.count(),  # todo: make it using db adapter
         }
 
         return meta, qs[offset:offset + limit]

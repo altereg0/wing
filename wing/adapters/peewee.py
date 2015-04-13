@@ -2,6 +2,7 @@ import peewee
 from wing.fields import *
 from ..errors import IntegrityError
 
+
 class Adapter(object):
     def __init__(self, cls):
         self.cls = cls
@@ -36,7 +37,8 @@ class Adapter(object):
 
     def get_fields(self, excludes=None):
         fields = {}
-        if not excludes: excludes = []
+        if not excludes:
+            excludes = []
 
         for key, field in self.cls._meta.fields.items():
             if key not in excludes:
@@ -82,6 +84,7 @@ def _filter_get_expr(field, filter_type, value):
         return field.in_(value)
     else:
         raise NotImplemented
+
 
 def create_resource_field(orm_field):
     """

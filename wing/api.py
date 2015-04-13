@@ -1,5 +1,5 @@
 from collections import defaultdict
-from .falcon import ItemFalconResource, CollectionFalconResource, create_func_resource
+from .falcon.resources import ItemFalconResource, CollectionFalconResource, create_func_resource
 
 
 class Api:

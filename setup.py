@@ -13,5 +13,6 @@ setup(
         'wing',
         'wing.adapters',
         'wing.serialization',
+        'wing.falcon'
     ]
 )
