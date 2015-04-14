@@ -1,5 +1,7 @@
 from collections import defaultdict
-from .falcon import ItemFalconResource, CollectionFalconResource, create_func_resource
+from falcon.api_helpers import prepare_middleware
+from .falcon.resources import ItemFalconResource, CollectionFalconResource, create_func_resource
+from wing.falcon.middlewares import HTTPCache
 
 
 class Api:
@@ -46,3 +48,7 @@ def register_resource(app, prefix, resource):
 
         custom_res = create_func_resource(func, http_methods)
         app.add_route(prefix + uri, custom_res)
+
+    if resource._meta.http_cache and resource._meta.cache:
+        middleware = HTTPCache(resource._meta.cache, resource)
+        app._middleware.extend(prepare_middleware([middleware]))

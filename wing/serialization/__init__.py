@@ -9,6 +9,7 @@ def get_serializer(req):
 
     return _get_serializer_by_type(type)
 
+
 def _get_serializer_by_type(type):
     if type == 'json':
         from . import json

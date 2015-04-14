@@ -35,6 +35,8 @@ class ResourceOptions(object):
     excludes = []
     primary_key = 'id'
     adapter = None
+    http_cache = False
+    cache = None
 
     def __new__(cls, meta=None):
         overrides = {}
@@ -172,7 +174,7 @@ class Resource(metaclass=DeclarativeMetaclass):
         for key, v in req.params.items():
             try:
                 field, op = key.rsplit('__', 1)
-            except Exception:
+            except ValueError:
                 field, op = key, 'exact'
 
             if field in cls._meta.filtering and op in cls._meta.filtering[field]:

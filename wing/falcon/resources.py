@@ -1,5 +1,5 @@
 import falcon
-from .serialization import get_serializer
+from ..serialization import get_serializer
 
 
 class BaseFalconResource:
