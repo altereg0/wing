@@ -28,7 +28,7 @@ class BasicTests(FuncTestCase):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/users')
-        self.check_response('200 OK')
+        self.check_response(resp, '200 OK')
 
         objects = json.loads(resp.content)
 
@@ -41,7 +41,7 @@ class BasicTests(FuncTestCase):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/users/1')
-        self.check_response('200 OK')
+        self.check_response(resp, '200 OK')
 
         user = json.loads(resp.content)
 
@@ -54,7 +54,7 @@ class BasicTests(FuncTestCase):
             'is_active': True,
         }
         resp = self.request('POST', '/v1/users/', body=json.dumps(data))
-        self.check_response('201 Created')
+        self.check_response(resp, '201 Created')
 
         result = json.loads(resp.content)
         self.assertEqual(3, result['pk'])
@@ -65,7 +65,7 @@ class BasicTests(FuncTestCase):
             'is_active': True,
         }
         resp = self.request('PUT', '/v1/users/2', body=json.dumps(data))
-        self.check_response('200 OK')
+        self.check_response(resp, '200 OK')
 
         user = json.loads(resp.content)
 
