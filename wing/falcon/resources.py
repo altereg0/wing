@@ -38,7 +38,11 @@ class CollectionFalconResource(BaseFalconResource):
         self._check_method('post', 'list')
         serializer = get_serializer(req)
 
-        req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
+        try:
+            req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
+        except ValueError:
+            raise falcon.HTTPBadRequest('Invalid format', 'Request body cannot be parsed')
+
         result = self.resource.post_list(req, **kwargs)
 
         resp.status = falcon.HTTP_201
@@ -49,7 +53,10 @@ class CollectionFalconResource(BaseFalconResource):
         self._check_method('put', 'list')
         serializer = get_serializer(req)
 
-        req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
+        try:
+            req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
+        except ValueError:
+            raise falcon.HTTPBadRequest('Invalid format', 'Request body cannot be parsed')
 
         results = self.resource.put_list(req, **kwargs)
 
@@ -99,7 +106,11 @@ class ItemFalconResource(BaseFalconResource):
         self._check_method('put', 'details')
         serializer = get_serializer(req)
 
-        req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
+        try:
+            req.context['data'] = serializer.loads(req.stream.read().decode('utf-8'))
+        except ValueError:
+            raise falcon.HTTPBadRequest('Invalid format', 'Request body cannot be parsed')
+
         result = self.resource.put_details(req, **kwargs)
 
         resp.status = falcon.HTTP_200
