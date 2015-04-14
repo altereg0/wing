@@ -230,7 +230,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
     def put_list(self, req, **kwargs):
         data = req.context['data']
 
-        for k, v in kwargs:
+        for k, v in kwargs.items():
             try:
                 self.fields[k].convert(v)
             except DoesNotExist:
