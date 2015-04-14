@@ -148,25 +148,29 @@ class Resource(metaclass=DeclarativeMetaclass):
         :param obj: object
         :param data: data as dictionary
         """
-        for key, field in self.fields.items():
-            if field.readonly:
-                continue
+        try:
+            for key, field in self.fields.items():
+                if field.readonly:
+                    continue
 
-            if key not in data:
-                if field.required:
-                    raise MissingRequiredFieldError(key)
+                if key not in data:
+                    if field.required:
+                        raise MissingRequiredFieldError(key)
 
-                continue
+                    continue
 
-            value = data.get(key, None)
+                value = data.get(key, None)
 
-            if not field.null and value is None:
-                raise NotNullFieldError(key)
+                if not field.null and value is None:
+                    raise NotNullFieldError(key)
 
-            try:
-                field.hydrate(obj, value)
-            except ValueError as e:
-                raise FieldValidationError(key, e.args[0])
+                try:
+                    field.hydrate(obj, value)
+                except ValueError as e:
+                    raise FieldValidationError(key, e.args[0])
+
+        except FieldValidationError as e:
+            raise falcon.HTTPBadRequest('Validation error', str(e))
 
     @classmethod
     def _filters_from_request(cls, req):
