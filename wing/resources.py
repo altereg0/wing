@@ -230,11 +230,11 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
     def put_list(self, req, **kwargs):
         data = req.context['data']
 
-        #todo: optimize checking?
-        try:
-            self.find_object(**kwargs)
-        except DoesNotExist:
-            raise falcon.HTTPNotFound()
+        for k, v in kwargs:
+            try:
+                self.fields[k].convert(v)
+            except DoesNotExist:
+                raise falcon.HTTPNotFound()
 
         pk_field = self._meta.primary_key
 
@@ -309,7 +309,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         meta = {
             'limit': limit,
             'offset': offset,
-            'total_count': qs.count(), # todo: make it using db adapter
+            'total_count': qs.count(),  # todo: make it using db adapter
         }
 
         return meta, qs[offset:offset + limit]
