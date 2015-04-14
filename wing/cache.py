@@ -59,3 +59,32 @@ class LocMemCache:
 
     def clear(self):
         self.data = {}
+
+
+try:
+    import redis
+
+    class RedisCache:
+        def __init__(self, client):
+            self.client = client
+
+        def add(self, key, val, ttl=None):
+            self.client.set(key, val, px=ttl * 1000, nx=True)
+
+        def set(self, key, val, ttl=None):
+            self.client.set(key, val, px=ttl * 1000)
+
+        def get(self, key):
+            return self.client.get(key)
+
+        def has(self, key):
+            return self.client.get(key) is not None
+
+        def remove(self, key):
+            self.client.delete(key)
+
+        def clear(self):
+            self.client.flushdb()
+
+except ImportError:
+    pass
