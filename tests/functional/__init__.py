@@ -5,6 +5,8 @@ from falcon.testing import create_environ, StartResponseMock
 
 
 class FuncTestCase(TestCase):
+    app = None
+
     @classmethod
     def setUpClass(cls):
         cls.app = falcon.API()
