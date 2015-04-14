@@ -35,6 +35,8 @@ class ResourceOptions(object):
     excludes = []
     primary_key = 'id'
     adapter = None
+    http_cache = False
+    cache = None
 
     def __new__(cls, meta=None):
         overrides = {}

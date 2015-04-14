@@ -34,12 +34,13 @@ class LocMemCache:
         return True
 
     def set(self, key, val, ttl=None):
-        self.data[key] = (val, datetime.now().timestamp() + ttl)
+        expire_ts = datetime.now().timestamp() + ttl if ttl is not None else None
+        self.data[key] = (val, expire_ts)
 
     def get(self, key):
         val, expire = self.data.get(key, (None, None))
 
-        if expire and expire > datetime.now().timestamp():
+        if expire is not None and expire > datetime.now().timestamp():
             del self.data[key]
             return None
 
