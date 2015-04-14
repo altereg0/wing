@@ -70,7 +70,8 @@ try:
             self.prefix = prefix
 
         def add(self, key, val, ttl=None):
-            self.client.set(self.prefix + key, val, px=ttl * 1000, nx=True)
+            ttl = ttl * 1000 if ttl else None
+            self.client.set(self.prefix + key, val, px=ttl, nx=True)
 
         def set(self, key, val, ttl=None):
             self.client.set(self.prefix + key, val, px=ttl * 1000)
