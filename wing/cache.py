@@ -1,4 +1,5 @@
 from datetime import datetime
+import pickle
 
 
 class DummyCache:
@@ -71,13 +72,20 @@ try:
 
         def add(self, key, val, ttl=None):
             ttl = ttl * 1000 if ttl else None
+            val = pickle.dumps(val)
             self.client.set(self.prefix + key, val, px=ttl, nx=True)
 
         def set(self, key, val, ttl=None):
+            ttl = ttl * 1000 if ttl else None
+            val = pickle.dumps(val)
             self.client.set(self.prefix + key, val, px=ttl * 1000)
 
         def get(self, key):
-            return self.client.get(self.prefix + key)
+            val = self.client.get(self.prefix + key)
+            if val is None:
+                return None
+
+            return pickle.loads(val)
 
         def has(self, key):
             return self.client.get(self.prefix + key) is not None
