@@ -65,23 +65,24 @@ try:
     import redis
 
     class RedisCache:
-        def __init__(self, client):
+        def __init__(self, client, prefix=''):
             self.client = client
+            self.prefix = prefix
 
         def add(self, key, val, ttl=None):
-            self.client.set(key, val, px=ttl * 1000, nx=True)
+            self.client.set(self.prefix + key, val, px=ttl * 1000, nx=True)
 
         def set(self, key, val, ttl=None):
-            self.client.set(key, val, px=ttl * 1000)
+            self.client.set(self.prefix + key, val, px=ttl * 1000)
 
         def get(self, key):
-            return self.client.get(key)
+            return self.client.get(self.prefix + key)
 
         def has(self, key):
-            return self.client.get(key) is not None
+            return self.client.get(self.prefix + key) is not None
 
         def remove(self, key):
-            self.client.delete(key)
+            self.client.delete(self.prefix + key)
 
         def clear(self):
             self.client.flushdb()
