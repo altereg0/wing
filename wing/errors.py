@@ -6,6 +6,10 @@ class NoAdapter(Exception):
     pass
 
 
+class InvalidValue(ValueError):
+    pass
+
+
 class FieldValidationError(Exception):
     def __init__(self, field, message):
         self.field = field

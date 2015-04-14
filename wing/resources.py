@@ -161,7 +161,10 @@ class Resource(metaclass=DeclarativeMetaclass):
             if not field.null and value is None:
                 raise NotNullFieldError(key)
 
-            field.hydrate(obj, value)
+            try:
+                field.hydrate(obj, value)
+            except ValueError as e:
+                raise FieldValidationError(key, e.args[0])
 
     @classmethod
     def _filters_from_request(cls, req):

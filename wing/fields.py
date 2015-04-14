@@ -1,5 +1,6 @@
 from datetime import datetime
-from .errors import DoesNotExist
+from urllib.parse import urlparse
+from .errors import DoesNotExist, InvalidValue
 
 
 class Field(object):
@@ -44,7 +45,10 @@ class TextField(Field):
 
 class IntegerField(Field):
     def convert(self, value):
-        return int(value)
+        try:
+            return int(value)
+        except ValueError as e:
+            raise InvalidValue(*e.args)
 
 
 class BooleanField(Field):
@@ -60,8 +64,10 @@ class DateTimeField(Field):
     def convert(self, value):
         if value is None:
             return None
-
-        return datetime.strptime(value, self.format)
+        try:
+            return datetime.strptime(value, self.format)
+        except ValueError:
+            raise InvalidValue('Invalid datetime format')
 
 
 class DateField(DateTimeField):
@@ -71,8 +77,23 @@ class DateField(DateTimeField):
     def convert(self, value):
         if value is None:
             return None
+        try:
+            return super(DateField, self).date()
+        except:
+            raise InvalidValue('Invalid date format')
 
-        return super(DateField, self).date()
+
+class URLField(CharField):
+    def convert(self, value):
+        if value is None:
+            return None
+
+        parts = urlparse(value, 'http')
+
+        if not parts.netloc:
+            raise InvalidValue('Invalid URL value')
+
+        return parts.geturl()
 
 
 class ForeignKeyField(Field):
