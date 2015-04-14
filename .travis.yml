@@ -7,6 +7,9 @@ python:
 
 install:
   - python setup.py install
+  - pip install peewee
+  - pip install pyyaml
+  - pip install redis
 
 script:
   - python tests/run.py
