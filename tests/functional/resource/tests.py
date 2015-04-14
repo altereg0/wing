@@ -28,10 +28,7 @@ class BasicTests(FuncTestCase):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/users')
-        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response('200 OK')
 
         objects = json.loads(resp.content)
 
@@ -44,11 +41,7 @@ class BasicTests(FuncTestCase):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/users/1')
-
-        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response('200 OK')
 
         user = json.loads(resp.content)
 
@@ -61,11 +54,7 @@ class BasicTests(FuncTestCase):
             'is_active': True,
         }
         resp = self.request('POST', '/v1/users/', body=json.dumps(data))
-
-        self.assertEqual('201 Created', resp.status, 'Response should be 201 Created')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response('201 Created')
 
         result = json.loads(resp.content)
         self.assertEqual(3, result['pk'])
@@ -76,11 +65,7 @@ class BasicTests(FuncTestCase):
             'is_active': True,
         }
         resp = self.request('PUT', '/v1/users/2', body=json.dumps(data))
-
-        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response('200 OK')
 
         user = json.loads(resp.content)
 

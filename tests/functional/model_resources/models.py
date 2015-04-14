@@ -20,13 +20,16 @@ class User(peewee.Model):
 class Category(peewee.Model):
     title = peewee.CharField()
     slug = peewee.CharField()
+
     class Meta:
         database = db
+
 
 class Post(peewee.Model):
     title = peewee.CharField()
     slug = peewee.CharField()
     category = peewee.ForeignKeyField(Category, null=True)
     content = peewee.TextField(default='')
+
     class Meta:
         database = db

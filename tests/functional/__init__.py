@@ -37,3 +37,9 @@ class FuncTestCase(TestCase):
             resp.content = result[0].decode('utf-8')
 
         return resp
+
+    def check_response(self, resp, status='200 OK'):
+        self.assertEqual(status, resp.status, 'Response should be %s' % status)
+        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
+        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
+                        'Default content type should be application/json')

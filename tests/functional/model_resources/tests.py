@@ -29,10 +29,7 @@ class BasicModelTests(FuncTestCase):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/users')
-        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response(resp, '200 OK')
 
         data = json.loads(resp.content)
 
@@ -52,11 +49,7 @@ class BasicModelTests(FuncTestCase):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/users/1')
-
-        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response(resp, '200 OK')
 
         user = json.loads(resp.content)
 
@@ -69,11 +62,7 @@ class BasicModelTests(FuncTestCase):
             'is_active': True,
         }
         resp = self.request('POST', '/v1/users/', body=json.dumps(data))
-
-        self.assertEqual('201 Created', resp.status, 'Response should be 201 Created')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response(resp, '201 Created')
 
         result = json.loads(resp.content)
         self.assertEqual(3, result['id'])
@@ -83,12 +72,9 @@ class BasicModelTests(FuncTestCase):
             'name': 'test2-updated',
             'is_active': True,
         }
-        resp = self.request('PUT', '/v1/users/2', body=json.dumps(data))
 
-        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        resp = self.request('PUT', '/v1/users/2', body=json.dumps(data))
+        self.check_response(resp, '200 OK')
 
         user = json.loads(resp.content)
 
@@ -112,11 +98,7 @@ class BasicModelTests(FuncTestCase):
                 },
         ]
         resp = self.request('PUT', '/v1/users/', body=json.dumps(data))
-
-        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response(resp, '200 OK')
 
         data = json.loads(resp.content)
         data = data['objects']
@@ -132,9 +114,6 @@ class BasicModelTests(FuncTestCase):
         self.assertEqual('204 No Content', resp.status, 'Response should be 204 No Content')
         self.assertEqual('', resp.content)
 
-        resp = self.request('DELETE', '/v1/users/2')
-        self.assertEqual('404 Not Found', resp.status, 'Response should be 404 Not Found')
-
         resp = self.request('GET', '/v1/users/2')
         self.assertEqual('404 Not Found', resp.status, 'Response should be 404 Not Found')
 
@@ -144,10 +123,7 @@ class BasicModelTests(FuncTestCase):
         self.assertEqual('', resp.content)
 
         resp = self.request('GET', '/v1/users/')
-        self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
+        self.check_response(resp, '200 OK')
 
         data = json.loads(resp.content)
 
@@ -208,6 +184,23 @@ class BasicModelTests(FuncTestCase):
         objects = data['objects']
         self.assertEqual(2, len(objects))
 
+    def test_no_required_field(self):
+        data = {
+            'is_active': True,
+        }
+        resp = self.request('POST', '/v1/users/', body=json.dumps(data))
+        self.check_response(resp, '400 Bad Request')
+
+        result = json.loads(resp.content)
+        self.assertEqual('Validation error', result.get('title'))
+
+    def test_not_json(self):
+        resp = self.request('POST', '/v1/users/', body='Invalid JSON')
+        self.check_response(resp, '400 Bad Request')
+
+        result = json.loads(resp.content)
+        self.assertEqual('Invalid format', result.get('title'))
+
 
 class RelationsModelTests(FuncTestCase):
     is_safe = False
@@ -252,7 +245,7 @@ class RelationsModelTests(FuncTestCase):
         self.is_safe = True
 
         resp = self.request('GET', '/v1/posts/1')
-        self._check_response(resp, '200 OK')
+        self.check_response(resp, '200 OK')
 
         post = json.loads(resp.content)
 
@@ -262,7 +255,7 @@ class RelationsModelTests(FuncTestCase):
 
     def test_nested_resources(self):
         resp = self.request('GET', '/v1/categories/1/posts/')
-        self._check_response(resp, '200 OK')
+        self.check_response(resp, '200 OK')
 
         data = json.loads(resp.content)
 
@@ -282,19 +275,13 @@ class RelationsModelTests(FuncTestCase):
         }
 
         resp = self.request('POST', '/v1/categories/1/posts/', body=json.dumps(new_post))
-        self._check_response(resp, '201 Created')
+        self.check_response(resp, '201 Created')
 
         data = json.loads(resp.content)
         self.assertIsNotNone(data.get('id'))
 
         resp = self.request('GET', '/v1/categories/1/posts/%d' % data.get('id'))
-        self._check_response(resp)
+        self.check_response(resp)
         data = json.loads(resp.content)
         self.assertEqual(new_post['slug'], data['slug'])
         self.assertEqual(1, data['category'], 'Category should be rewritten by params from URL')
-
-    def _check_response(self, resp, status='200 OK'):
-        self.assertEqual(status, resp.status, 'Response should be %s' % status)
-        self.assertIn('content-type', resp.headers_dict, 'Content-Type header should return')
-        self.assertTrue(resp.headers_dict['content-type'].startswith('application/json'),
-                        'Default content type should be application/json')
