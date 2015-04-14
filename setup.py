@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='falcon-wing',
-    version='0.2.5.1',
+    version='0.3.0',
     description='Falcon extension for building nice looking API',
 
     author='Vlad Bakin',
