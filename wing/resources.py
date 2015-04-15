@@ -212,6 +212,9 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         }
 
     def post_list(self, req, **kwargs):
+        if not isinstance(req.context['data'], dict):
+            raise falcon.HTTPBadRequest('Invalid content', 'Data should be an objects')
+
         data = copy(req.context['data'])
         data.update(kwargs)
 
@@ -239,6 +242,9 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
     def put_list(self, req, **kwargs):
         data = req.context['data']
 
+        if not isinstance(data, list):
+            raise falcon.HTTPBadRequest('Invalid content', 'Data should be a list of objects')
+
         for k, v in kwargs.items():
             try:
                 self.fields[k].convert(v)
@@ -249,6 +255,9 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
 
         results = []
         for item in data:
+            if not isinstance(item, dict):
+                raise falcon.HTTPBadRequest('Invalid content', 'Data should be a list of objects')
+
             pk = item.get(pk_field)
             item.update(kwargs)
 
@@ -282,6 +291,9 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         return self.dehydrate(obj, sender='details')
 
     def put_details(self, req, **kwargs):
+        if not isinstance(req.context['data'], dict):
+            raise falcon.HTTPBadRequest('Invalid content', 'Data should be an objects')
+
         try:
             obj = self.find_object(**kwargs)
         except DoesNotExist:

@@ -201,6 +201,14 @@ class BasicModelTests(FuncTestCase):
         result = json.loads(resp.content)
         self.assertEqual('Invalid format', result.get('title'))
 
+    def test_not_object_list(self):
+        resp = self.request('PUT', '/v1/users/', body=json.dumps({
+            'name': 'test'
+        }))
+        self.check_response(resp, '400 Bad Request')
+
+        result = json.loads(resp.content)
+        self.assertEqual('Invalid content', result.get('title'))
 
 class RelationsModelTests(FuncTestCase):
     is_safe = False
