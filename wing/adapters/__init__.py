@@ -7,6 +7,17 @@ def detect_adapter(cls):
 
         if issubclass(cls, peewee.Model):
             from .peewee import Adapter
+
+            return Adapter
+    except ImportError:
+        pass
+
+    try:
+        import pony.orm
+
+        if issubclass(cls, pony.orm.Entity):
+            from .ponyorm import Adapter
+
             return Adapter
     except ImportError:
         pass
