@@ -113,7 +113,7 @@ class ForeignKeyField(Field):
         rel_field = self.rel_resource.fields[rel_pk]
 
         filters = self.rel_resource._filters_from_kwargs(**{rel_pk: rel_field.convert(value)})
-        qs = self.rel_resource._db.select(filters)[:1]
+        qs = self.rel_resource.db.select(filters)[:1]
 
         if len(qs) == 0:
             raise DoesNotExist()

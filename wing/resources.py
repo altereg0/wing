@@ -90,9 +90,9 @@ class ModelDeclarativeMetaclass(DeclarativeMetaclass):
             if not new_class._meta.adapter:
                 new_class._meta.adapter = detect_adapter(new_class._meta.object_class)
 
-            new_class._db = new_class._meta.adapter(new_class._meta.object_class)
+            new_class.db = new_class._meta.adapter(new_class._meta.object_class)
 
-            new_class.fields.update(new_class._db.get_fields(new_class._meta.excludes + list(new_class.fields.keys())))
+            new_class.fields.update(new_class.db.get_fields(new_class._meta.excludes + list(new_class.fields.keys())))
 
         return new_class
 
@@ -192,7 +192,7 @@ class Resource(metaclass=DeclarativeMetaclass):
 
 
 class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
-    _db = None
+    db = None
 
     def get_list(self, req, **kwargs):
         try:
@@ -203,7 +203,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         offset = req.get_param_as_int('offset', min=0) or 0
         limit = req.get_param_as_int('limit', min=1, max=self._meta.max_limit) or self._meta.limit
 
-        qs = self._db.select(filters)
+        qs = self.db.select(filters)
         meta, qs = self._paginate(qs, offset, limit)
 
         return {
@@ -218,14 +218,15 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         data = copy(req.context['data'])
         data.update(kwargs)
 
-        obj = self._db.create_object()
+        with self.db.transaction():
+            obj = self.db.create_object()
 
-        try:
-            self.hydrate(obj, data)
-        except FieldValidationError as e:
-            raise falcon.HTTPBadRequest('Bad request', str(e))
+            try:
+                self.hydrate(obj, data)
+            except FieldValidationError as e:
+                raise falcon.HTTPBadRequest('Bad request', str(e))
 
-        self.save_obj(obj)
+            self.save_obj(obj)
 
         return {
             self._meta.primary_key: getattr(obj, self._meta.primary_key)
@@ -237,7 +238,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         except DoesNotExist:
             raise falcon.HTTPNotFound()
 
-        self._db.delete(filters)
+        self.db.delete(filters)
 
     def put_list(self, req, **kwargs):
         data = req.context['data']
@@ -254,29 +255,30 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         pk_field = self._meta.primary_key
 
         results = []
-        for item in data:
-            if not isinstance(item, dict):
-                raise falcon.HTTPBadRequest('Invalid content', 'Data should be a list of objects')
+        with self.db.transaction():
+            for item in data:
+                if not isinstance(item, dict):
+                    raise falcon.HTTPBadRequest('Invalid content', 'Data should be a list of objects')
 
-            pk = item.get(pk_field)
-            item.update(kwargs)
+                pk = item.get(pk_field)
+                item.update(kwargs)
 
-            if not pk:
-                obj = self._db.create_object()
-            else:
-                params = copy(kwargs)
-                params[pk_field] = pk
+                if not pk:
+                    obj = self.db.create_object()
+                else:
+                    params = copy(kwargs)
+                    params[pk_field] = pk
 
-                try:
-                    obj = self.find_object(**params)
-                except DoesNotExist:
-                    raise falcon.HTTPBadRequest('Object not found', 'Object with primary key "%s" not found' % pk)
+                    try:
+                        obj = self.find_object(**params)
+                    except DoesNotExist:
+                        raise falcon.HTTPBadRequest('Object not found', 'Object with primary key "%s" not found' % pk)
 
-            self.hydrate(obj, item)
+                self.hydrate(obj, item)
 
-            self.save_obj(obj)
+                self.save_obj(obj)
 
-            results.append(self.dehydrate(obj, sender='list'))
+                results.append(self.dehydrate(obj, sender='list'))
 
         return {
             'objects': results
@@ -307,13 +309,13 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         return self.dehydrate(obj, sender='details')
 
     def delete_details(self, req, **kwargs):
-        affected_rows = self._db.delete(self._filters_from_kwargs(**kwargs))
+        affected_rows = self.db.delete(self._filters_from_kwargs(**kwargs))
 
         if not affected_rows:
             raise falcon.HTTPNotFound()
 
     def find_object(self, **kwargs):
-        qs = self._db.select(self._filters_from_kwargs(**kwargs))[:1]
+        qs = self.db.select(self._filters_from_kwargs(**kwargs))[:1]
 
         if len(qs) == 0:
             raise DoesNotExist()
@@ -322,7 +324,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
 
     def save_obj(self, obj):
         try:
-            self._db.save_object(obj)
+            self.db.save_object(obj)
         except IntegrityError as e:
             raise falcon.HTTPBadRequest('Integrity error', *e.args[0])
 

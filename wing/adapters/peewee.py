@@ -7,6 +7,9 @@ class Adapter(object):
     def __init__(self, cls):
         self.cls = cls
 
+    def transaction(self):
+        return self.cls._meta.database.transaction()
+
     def select(self, filters=None):
         query = self.cls.select()
         if filters:

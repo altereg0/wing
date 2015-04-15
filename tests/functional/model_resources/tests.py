@@ -210,6 +210,37 @@ class BasicModelTests(FuncTestCase):
         result = json.loads(resp.content)
         self.assertEqual('Invalid content', result.get('title'))
 
+    def test_transaction(self):
+        data = [{
+                    'id': 2,
+                    'name': 'test2-updated',
+                    'is_active': True,
+                },
+                {
+                    'id': 1,
+                    'name': 'test1-updated',
+                    'is_active': True,
+                }, {
+                    'id': 100,
+                    'name': 'test3-new',
+                    'is_active': True,
+                },
+        ]
+        resp = self.request('PUT', '/v1/users/', body=json.dumps(data))
+        self.check_response(resp, '400 Bad Request')
+
+        resp = self.request('GET', '/v1/users/')
+        self.check_response(resp, '200 OK')
+
+        data = json.loads(resp.content)
+        data = data['objects']
+
+        self.assertEqual(2, len(data))
+
+        self.assertEqual('test1', data[0]['name'])
+        self.assertEqual('test2', data[1]['name'])
+
+
 class RelationsModelTests(FuncTestCase):
     is_safe = False
 
