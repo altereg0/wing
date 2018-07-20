@@ -229,7 +229,9 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
             self.save_obj(obj)
 
         return {
-            self._meta.primary_key: getattr(obj, self._meta.primary_key)
+            # self._meta.primary_key: getattr(obj, self._meta.primary_key)
+            # :patch
+            self._meta.primary_key: getattr(obj, '_pk')
         }
 
     def delete_list(self, req, **kwargs):

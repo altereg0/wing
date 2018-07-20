@@ -8,7 +8,7 @@ class Field(object):
     Resource field
     """
 
-    def __init__(self, attribute, required=False, null=False, readonly=False, show=None):
+    def __init__(self, attribute, required=False, null=False, readonly=False, show=None, pk=False):
         if show is None:
             show = ['details', 'list']
 
@@ -106,10 +106,12 @@ class ForeignKeyField(Field):
         """dehydrate field from object"""
         rel_obj = getattr(obj, self.attribute)
 
-        return getattr(rel_obj, self.rel_resource._meta.primary_key) if rel_obj is not None else None
+        # return getattr(rel_obj, self.rel_resource._meta.primary_key) if rel_obj is not None else None
+        return getattr(rel_obj, self.rel_resource._meta.pk) if rel_obj is not None else None
 
     def convert(self, value):
-        rel_pk = self.rel_resource._meta.primary_key
+        # rel_pk = self.rel_resource._meta.primary_key
+        rel_pk = self.rel_resource._meta.pk
         rel_field = self.rel_resource.fields[rel_pk]
 
         filters = self.rel_resource._filters_from_kwargs(**{rel_pk: rel_field.convert(value)})

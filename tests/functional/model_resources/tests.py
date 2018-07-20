@@ -317,9 +317,9 @@ class RelationsModelTests(FuncTestCase):
         self.check_response(resp, '201 Created')
 
         data = json.loads(resp.content)
-        self.assertIsNotNone(data.get('id'))
+        self.assertIsNotNone(data.get('post'))
 
-        resp = self.request('GET', '/v1/categories/1/posts/%d' % data.get('id'))
+        resp = self.request('GET', format('/v1/categories/1/posts/{:}', data.get('post')))
         self.check_response(resp)
         data = json.loads(resp.content)
         self.assertEqual(new_post['slug'], data['slug'])

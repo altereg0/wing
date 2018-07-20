@@ -102,11 +102,16 @@ def create_resource_field(orm_field):
         peewee.BooleanField: BooleanField,
         peewee.DateTimeField: DateTimeField,
         peewee.DateField: DateField,
+        peewee.AutoField: IntegerField
     }
 
     if isinstance(orm_field, peewee.Field):
         is_required = not orm_field.null and orm_field.default is None
         if isinstance(orm_field, peewee.PrimaryKeyField):
+            is_required = False
+
+        # :patch
+        if isinstance(orm_field, peewee.AutoField):
             is_required = False
 
         is_nullable = orm_field.null
