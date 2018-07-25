@@ -1,4 +1,5 @@
 import peewee
+
 from wing.fields import *
 from ..errors import IntegrityError
 
