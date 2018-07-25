@@ -31,7 +31,7 @@ def register_api(app, api):
         for nested_resource, foreign_key in nested_resources:
             register_resource(
                 app,
-                prefix + '/{:s}/{{{:s}}}'.format(api.resources[res_name]._meta.resource_name, foreign_key),
+                '{:s}/{:s}/{{{:s}}}'.format(prefix, api.resources[res_name]._meta.resource_name, foreign_key),
                 nested_resource
             )
 
@@ -40,10 +40,10 @@ def register_resource(app, prefix, resource):
     item_res = ItemFalconResource(resource)
     coll_res = CollectionFalconResource(resource)
 
-    prefix += "/{:s}".format(resource._meta.resource_name)
+    prefix = "{:s}/{:s}".format(prefix, resource._meta.resource_name)
 
     app.add_route(prefix, coll_res)
-    app.add_route(prefix + '/{{{:s}}}'.format(resource._meta.primary_key), item_res)
+    app.add_route('{:s}/{{{:s}}}'.format(prefix, resource._meta.primary_key), item_res)
 
     for func_name, uri, http_methods in resource.custom_methods:
         func = getattr(resource, func_name)

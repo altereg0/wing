@@ -1,5 +1,6 @@
 from datetime import datetime
 from urllib.parse import urlparse
+
 from .errors import DoesNotExist, InvalidValue
 
 
@@ -35,9 +36,9 @@ class Field(object):
     def convert(self, value):
         return value
 
-    # alter
-    def convert_name(self, value):
-        return value
+    def convert_name(self, name):
+        return name
+
 
 class CharField(Field):
     pass
@@ -53,9 +54,6 @@ class IntegerField(Field):
             return int(value)
         except ValueError as e:
             raise InvalidValue(*e.args)
-
-    def convert_name(self, value):
-        return value
 
 
 class BooleanField(Field):
@@ -138,9 +136,10 @@ class ForeignKeyField(Field):
 
         return qs[0]
 
-    def convert_name(self, value):
-        value = "{:}_{:}".format(self.rel_resource._meta.primary_key, self.rel_resource._meta.pk_)
-        return value
+    def convert_name(self, name):
+        name = "{:}_{:}".format(self.rel_resource._meta.primary_key, self.rel_resource._meta.pk_)
+        return name
+
 
 class ToManyField(Field):
     def __init__(self, attribute, rel_resource, full=False, *args, **kwargs):

@@ -1,5 +1,5 @@
-from .models import *
 import wing
+from .models import *
 
 
 class UserResource(wing.ModelResource):
@@ -19,7 +19,6 @@ class CategoryResource(wing.ModelResource):
         resource_name = 'categories'
         object_class = Category
         primary_key = 'category'
-        # pk_ = 'id'
 
 
 class PostResource(wing.ModelResource):
@@ -29,4 +28,3 @@ class PostResource(wing.ModelResource):
         resource_name = 'posts'
         object_class = Post
         primary_key = 'post'
-        # pk_ = 'id'

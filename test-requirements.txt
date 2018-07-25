@@ -1,3 +1,4 @@
+mimesis
 flake8
 coverage
 nose
