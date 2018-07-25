@@ -61,11 +61,11 @@ class BasicModelTests(FuncTestCase):
             'name': 'test3',
             'is_active': True,
         }
-        resp = self.request('POST', '/v1/users/', body=json.dumps(data))
+        resp = self.request('POST', '/v1/users', body=json.dumps(data))
         self.check_response(resp, '201 Created')
 
         result = json.loads(resp.content)
-        self.assertEqual(3, result['id'])
+        self.assertEqual(3, result['user'])
 
     def test_update_details(self):
         data = {
@@ -97,7 +97,7 @@ class BasicModelTests(FuncTestCase):
                     'is_active': True,
                 },
         ]
-        resp = self.request('PUT', '/v1/users/', body=json.dumps(data))
+        resp = self.request('PUT', '/v1/users', body=json.dumps(data))
         self.check_response(resp, '200 OK')
 
         data = json.loads(resp.content)
@@ -118,11 +118,11 @@ class BasicModelTests(FuncTestCase):
         self.assertEqual('404 Not Found', resp.status, 'Response should be 404 Not Found')
 
     def test_batch_delete(self):
-        resp = self.request('DELETE', '/v1/users/')
+        resp = self.request('DELETE', '/v1/users')
         self.assertEqual('204 No Content', resp.status, 'Response should be 204 No Content')
         self.assertEqual('', resp.content)
 
-        resp = self.request('GET', '/v1/users/')
+        resp = self.request('GET', '/v1/users')
         self.check_response(resp, '200 OK')
 
         data = json.loads(resp.content)
@@ -140,7 +140,7 @@ class BasicModelTests(FuncTestCase):
         self.assertIn('allow', resp.headers_dict, 'Allow header should return')
 
     def test_filtering(self):
-        resp = self.request('GET', '/v1/users/', {'name': 'test1'})
+        resp = self.request('GET', '/v1/users', {'name': 'test1'})
 
         self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
 
@@ -154,7 +154,7 @@ class BasicModelTests(FuncTestCase):
         self.assertEqual('test1', objects[0]['name'])
 
     def test_custom_filter_type(self):
-        resp = self.request('GET', '/v1/users/', {'name__startswith': 'test1'})
+        resp = self.request('GET', '/v1/users', {'name__startswith': 'test1'})
         self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
 
         data = json.loads(resp.content)
@@ -164,7 +164,7 @@ class BasicModelTests(FuncTestCase):
         self.assertEqual(1, len(objects))
         self.assertEqual('test1', objects[0]['name'])
 
-        resp = self.request('GET', '/v1/users/', {'name__startswith': 'est1'})
+        resp = self.request('GET', '/v1/users', {'name__startswith': 'est1'})
         self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
 
         data = json.loads(resp.content)
@@ -175,7 +175,7 @@ class BasicModelTests(FuncTestCase):
 
     def test_not_allowed_filtering(self):
         self.is_safe = True
-        resp = self.request('GET', '/v1/users/', {'name__endswith': 'test1'})
+        resp = self.request('GET', '/v1/users', {'name__endswith': 'test1'})
         self.assertEqual('200 OK', resp.status, 'Response should be 200 OK')
 
         data = json.loads(resp.content)
@@ -188,21 +188,21 @@ class BasicModelTests(FuncTestCase):
         data = {
             'is_active': True,
         }
-        resp = self.request('POST', '/v1/users/', body=json.dumps(data))
+        resp = self.request('POST', '/v1/users', body=json.dumps(data))
         self.check_response(resp, '400 Bad Request')
 
         result = json.loads(resp.content)
         self.assertEqual('Validation error', result.get('title'))
 
     def test_not_json(self):
-        resp = self.request('POST', '/v1/users/', body='Invalid JSON')
+        resp = self.request('POST', '/v1/users', body='Invalid JSON')
         self.check_response(resp, '400 Bad Request')
 
         result = json.loads(resp.content)
         self.assertEqual('Invalid format', result.get('title'))
 
     def test_not_object_list(self):
-        resp = self.request('PUT', '/v1/users/', body=json.dumps({
+        resp = self.request('PUT', '/v1/users', body=json.dumps({
             'name': 'test'
         }))
         self.check_response(resp, '400 Bad Request')
@@ -226,10 +226,10 @@ class BasicModelTests(FuncTestCase):
                     'is_active': True,
                 },
         ]
-        resp = self.request('PUT', '/v1/users/', body=json.dumps(data))
+        resp = self.request('PUT', '/v1/users', body=json.dumps(data))
         self.check_response(resp, '400 Bad Request')
 
-        resp = self.request('GET', '/v1/users/')
+        resp = self.request('GET', '/v1/users')
         self.check_response(resp, '200 OK')
 
         data = json.loads(resp.content)
@@ -293,7 +293,7 @@ class RelationsModelTests(FuncTestCase):
         self.assertEqual(None, post['category'])
 
     def test_nested_resources(self):
-        resp = self.request('GET', '/v1/categories/1/posts/')
+        resp = self.request('GET', '/v1/categories/1/posts')
         self.check_response(resp, '200 OK')
 
         data = json.loads(resp.content)
@@ -313,13 +313,13 @@ class RelationsModelTests(FuncTestCase):
             'category': 2
         }
 
-        resp = self.request('POST', '/v1/categories/1/posts/', body=json.dumps(new_post))
+        resp = self.request('POST', '/v1/categories/1/posts', body=json.dumps(new_post))
         self.check_response(resp, '201 Created')
 
         data = json.loads(resp.content)
         self.assertIsNotNone(data.get('post'))
 
-        resp = self.request('GET', format('/v1/categories/1/posts/{:}', data.get('post')))
+        resp = self.request('GET', '/v1/categories/1/posts/{:}'.format(data.get('post')))
         self.check_response(resp)
         data = json.loads(resp.content)
         self.assertEqual(new_post['slug'], data['slug'])

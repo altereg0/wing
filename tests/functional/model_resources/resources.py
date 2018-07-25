@@ -11,12 +11,15 @@ class UserResource(wing.ModelResource):
             'name': ['exact', 'startswith']
         }
         object_class = User
+        primary_key = 'user'
 
 
 class CategoryResource(wing.ModelResource):
     class Meta:
         resource_name = 'categories'
         object_class = Category
+        primary_key = 'category'
+        # pk_ = 'id'
 
 
 class PostResource(wing.ModelResource):
@@ -25,3 +28,5 @@ class PostResource(wing.ModelResource):
     class Meta:
         resource_name = 'posts'
         object_class = Post
+        primary_key = 'post'
+        # pk_ = 'id'

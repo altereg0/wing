@@ -17,6 +17,7 @@ class Field(object):
         self.required = required
         self.null = null
         self.show = show
+        self.pk = pk
 
     def hydrate(self, obj, value):
         """hydrate field to object"""
@@ -34,6 +35,9 @@ class Field(object):
     def convert(self, value):
         return value
 
+    # alter
+    def convert_name(self, value):
+        return value
 
 class CharField(Field):
     pass
@@ -49,6 +53,9 @@ class IntegerField(Field):
             return int(value)
         except ValueError as e:
             raise InvalidValue(*e.args)
+
+    def convert_name(self, value):
+        return value
 
 
 class BooleanField(Field):
@@ -102,16 +109,25 @@ class ForeignKeyField(Field):
 
         self.rel_resource = rel_resource
 
+    def hydrate(self, obj, value):
+        """hydrate field to object"""
+        if self.readonly:
+            return
+
+        value = self.convert(value)
+
+        setattr(obj, self.attribute, value)
+
     def dehydrate(self, obj):
         """dehydrate field from object"""
         rel_obj = getattr(obj, self.attribute)
 
         # return getattr(rel_obj, self.rel_resource._meta.primary_key) if rel_obj is not None else None
-        return getattr(rel_obj, self.rel_resource._meta.pk) if rel_obj is not None else None
+        return getattr(rel_obj, self.rel_resource._meta.pk_) if rel_obj is not None else None
 
     def convert(self, value):
         # rel_pk = self.rel_resource._meta.primary_key
-        rel_pk = self.rel_resource._meta.pk
+        rel_pk = self.rel_resource._meta.pk_
         rel_field = self.rel_resource.fields[rel_pk]
 
         filters = self.rel_resource._filters_from_kwargs(**{rel_pk: rel_field.convert(value)})
@@ -122,6 +138,9 @@ class ForeignKeyField(Field):
 
         return qs[0]
 
+    def convert_name(self, value):
+        value = "{:}_{:}".format(self.rel_resource._meta.primary_key, self.rel_resource._meta.pk_)
+        return value
 
 class ToManyField(Field):
     def __init__(self, attribute, rel_resource, full=False, *args, **kwargs):

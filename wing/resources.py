@@ -34,6 +34,7 @@ class ResourceOptions(object):
     object_class = None
     excludes = []
     primary_key = 'id'
+    pk_ = 'id'
     adapter = None
     http_cache = False
     cache = None
@@ -188,7 +189,13 @@ class Resource(metaclass=DeclarativeMetaclass):
 
     @classmethod
     def _filters_from_kwargs(cls, **kwargs):
-        return [(k, 'exact', cls.fields[k].convert(v)) for k, v in kwargs.items()]
+        # return [(cls.fields[k].convert_name(k), 'exact', cls.fields[k].convert(v)) for k, v in kwargs.items()]
+        # return [(k, 'exact', cls.fields[k].convert(v)) for k, v in kwargs.items()]
+        filters = []
+        for k, v in kwargs.items():
+            f = cls._meta.pk_ if k == cls._meta.primary_key else k
+            filters += [(f, 'exact', cls.fields[f].convert(v))]
+        return filters
 
 
 class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
@@ -196,7 +203,9 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
 
     def get_list(self, req, **kwargs):
         try:
-            filters = self._filters_from_request(req) + self._filters_from_kwargs(**kwargs)
+            _ffr = self._filters_from_request(req)
+            _ffk = self._filters_from_kwargs(**kwargs)
+            filters = _ffr + _ffk
         except DoesNotExist:
             raise falcon.HTTPNotFound()
 
@@ -231,7 +240,7 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
         return {
             # self._meta.primary_key: getattr(obj, self._meta.primary_key)
             # :patch
-            self._meta.primary_key: getattr(obj, '_pk')
+            self._meta.primary_key: getattr(obj, self._meta.pk_)
         }
 
     def delete_list(self, req, **kwargs):
@@ -254,7 +263,8 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
             except DoesNotExist:
                 raise falcon.HTTPNotFound()
 
-        pk_field = self._meta.primary_key
+        # pk_field = self._meta.primary_key
+        pk_field = self._meta.pk_
 
         results = []
         with self.db.transaction():
@@ -317,7 +327,9 @@ class ModelResource(Resource, metaclass=ModelDeclarativeMetaclass):
             raise falcon.HTTPNotFound()
 
     def find_object(self, **kwargs):
-        qs = self.db.select(self._filters_from_kwargs(**kwargs))[:1]
+        # TODO: alter
+        _filters = self._filters_from_kwargs(**kwargs)
+        qs = self.db.select(_filters)[:1]
 
         if len(qs) == 0:
             raise DoesNotExist()

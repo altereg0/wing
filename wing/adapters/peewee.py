@@ -104,15 +104,17 @@ def create_resource_field(orm_field):
         peewee.DateField: DateField,
         peewee.AutoField: IntegerField
     }
-
+    pk = False
     if isinstance(orm_field, peewee.Field):
         is_required = not orm_field.null and orm_field.default is None
         if isinstance(orm_field, peewee.PrimaryKeyField):
             is_required = False
+            pk = True
 
         # :patch
         if isinstance(orm_field, peewee.AutoField):
             is_required = False
+            pk = True
 
         is_nullable = orm_field.null
 
@@ -124,4 +126,4 @@ def create_resource_field(orm_field):
         if not cls:
             raise Exception('Unsupported field type %s' % type(orm_field))
 
-        return cls(orm_field.name, is_required, null=is_nullable)
+        return cls(orm_field.name, is_required, null=is_nullable, pk=pk)
