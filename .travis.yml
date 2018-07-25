@@ -1,14 +1,17 @@
+sudo: false
 language: python
 
 python:
-  - '3.3'
-  - '3.4'
+  - '3.5'
 
 install:
   - python setup.py install
-  - pip install peewee
-  - pip install pyyaml
-  - pip install redis
+  - pip install -r requirements.txt
+  - pip install .
+  - pip install codecov
 
 script:
-  - python tests/run.py
+  - nosetests --with-coverage
+
+after_success:
+  - codecov
