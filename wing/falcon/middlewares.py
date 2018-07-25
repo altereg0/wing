@@ -1,5 +1,6 @@
-from datetime import datetime
 import hashlib
+from datetime import datetime
+
 from .errors import HTTPNotModified
 
 

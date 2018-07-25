@@ -1,5 +1,5 @@
-from falcon import NoRepresentation, HTTPError
 import falcon
+from falcon import NoRepresentation, HTTPError
 
 
 class HTTPNotModified(NoRepresentation, HTTPError):

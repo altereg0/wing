@@ -1,4 +1,5 @@
 import falcon
+
 from ..serialization import get_serializer
 
 
