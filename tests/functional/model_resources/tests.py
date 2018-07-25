@@ -1,8 +1,9 @@
-from .. import FuncTestCase
 import json
+
+import wing
 from .models import User, Category, Post
 from .resources import UserResource, CategoryResource, PostResource
-import wing
+from .. import FuncTestCase
 
 __all__ = ['BasicModelTests', 'RelationsModelTests']
 
@@ -34,10 +35,10 @@ class BasicModelTests(FuncTestCase):
         data = json.loads(resp.content)
 
         self.assertDictEqual({
-                                 'offset': 0,
-                                 'limit': 20,
-                                 'total_count': 2
-                             }, data['meta'])
+            'offset': 0,
+            'limit': 20,
+            'total_count': 2
+        }, data['meta'])
 
         objects = data['objects']
         self.assertEqual(2, len(objects))
@@ -84,18 +85,18 @@ class BasicModelTests(FuncTestCase):
 
     def test_batch_update(self):
         data = [{
-                    'id': 2,
-                    'name': 'test2-updated',
-                    'is_active': True,
-                },
-                {
-                    'id': 1,
-                    'name': 'test1-updated',
-                    'is_active': True,
-                }, {
-                    'name': 'test3-new',
-                    'is_active': True,
-                },
+            'id': 2,
+            'name': 'test2-updated',
+            'is_active': True,
+        },
+            {
+                'id': 1,
+                'name': 'test1-updated',
+                'is_active': True,
+            }, {
+                'name': 'test3-new',
+                'is_active': True,
+            },
         ]
         resp = self.request('PUT', '/v1/users', body=json.dumps(data))
         self.check_response(resp, '200 OK')
@@ -128,10 +129,10 @@ class BasicModelTests(FuncTestCase):
         data = json.loads(resp.content)
 
         self.assertDictEqual({
-                                 'offset': 0,
-                                 'limit': 20,
-                                 'total_count': 0
-                             }, data['meta'])
+            'offset': 0,
+            'limit': 20,
+            'total_count': 0
+        }, data['meta'])
 
     def test_wrong_http_method(self):
         resp = self.request('POST', '/v1/users/2')
@@ -212,19 +213,19 @@ class BasicModelTests(FuncTestCase):
 
     def test_transaction(self):
         data = [{
-                    'id': 2,
-                    'name': 'test2-updated',
-                    'is_active': True,
-                },
-                {
-                    'id': 1,
-                    'name': 'test1-updated',
-                    'is_active': True,
-                }, {
-                    'id': 100,
-                    'name': 'test3-new',
-                    'is_active': True,
-                },
+            'id': 2,
+            'name': 'test2-updated',
+            'is_active': True,
+        },
+            {
+                'id': 1,
+                'name': 'test1-updated',
+                'is_active': True,
+            }, {
+                'id': 100,
+                'name': 'test3-new',
+                'is_active': True,
+            },
         ]
         resp = self.request('PUT', '/v1/users', body=json.dumps(data))
         self.check_response(resp, '400 Bad Request')

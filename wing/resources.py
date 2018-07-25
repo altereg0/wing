@@ -1,8 +1,10 @@
 from copy import copy
-from .fields import Field
+
+import falcon
+
 from .adapters import detect_adapter
 from .errors import DoesNotExist, MissingRequiredFieldError, NotNullFieldError, FieldValidationError, IntegrityError
-import falcon
+from .fields import Field
 from .settings import DEFAULT_MAX_LIMIT, DEFAULT_LIMIT
 
 
@@ -61,8 +63,8 @@ class ResourceOptions(object):
 
 
 class DeclarativeMetaclass(type):
-    def __new__(cls, name, bases, attrs):
-        new_class = super(DeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+    def __new__(mcs, name, bases, attrs):
+        new_class = super(DeclarativeMetaclass, mcs).__new__(mcs, name, bases, attrs)
 
         opts = getattr(new_class, 'Meta', None)
         new_class._meta = ResourceOptions(opts)
@@ -84,8 +86,8 @@ class DeclarativeMetaclass(type):
 
 
 class ModelDeclarativeMetaclass(DeclarativeMetaclass):
-    def __new__(cls, name, bases, attrs):
-        new_class = super(ModelDeclarativeMetaclass, cls).__new__(cls, name, bases, attrs)
+    def __new__(mcs, name, bases, attrs):
+        new_class = super(ModelDeclarativeMetaclass, mcs).__new__(mcs, name, bases, attrs)
 
         if new_class._meta.object_class:
             if not new_class._meta.adapter:
@@ -139,6 +141,7 @@ class Resource(metaclass=DeclarativeMetaclass):
         """
         Dehydrate object
         :param obj: object
+        :param sender: tuple
         """
         return {key: field.dehydrate(obj) for key, field in self.fields.items() if
                 sender is None or (sender in field.show)}

@@ -10,15 +10,16 @@ URL = 'https://github.com/altereg0/wing'
 EMAIL = 'noemail@user.com'
 AUTHOR = 'Vlad Bakin, altereg0'
 REQUIRES_PYTHON = '>=3.5.0'
-VERSION = '0.3.3'
+VERSION = None
 KEYWORDS = "falcon peewee wing"
 # What packages are required for this module to be executed?
 REQUIRED = [
     'falcon',
     'peewee',
-    'marshmallow',
-    'marshmallow-jsonapi',
-    'pyjwt'
+    'redis'
+    # 'marshmallow',
+    # 'marshmallow-jsonapi',
+    # 'pyjwt'
 ]
 
 # What packages are optional?

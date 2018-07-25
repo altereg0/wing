@@ -135,7 +135,7 @@ class ItemFalconResource(BaseFalconResource):
         resp.body = serializer.dumps(result)
 
 
-class FunctionResource():
+class FunctionResource:
     pass
 
 

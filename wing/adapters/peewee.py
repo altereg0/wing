@@ -33,7 +33,8 @@ class Adapter(object):
     def create_object(self):
         return self.cls()
 
-    def save_object(self, obj):
+    @staticmethod
+    def save_object(obj):
         try:
             obj.save()
         except peewee.IntegrityError as e:
